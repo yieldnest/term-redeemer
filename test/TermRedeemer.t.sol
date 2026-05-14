@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {Test} from "forge-std/Test.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 import {MockMaxVault} from "./mocks/MockMaxVault.sol";
-import {TermRedeemer, TermReceiptToken} from "../src/TermRedeemer.sol";
+import {LockClosed, LockNotStarted, RedeemNotStarted, TermReceiptToken, TermRedeemer} from "../src/TermRedeemer.sol";
 
 contract TermRedeemerTest is Test {
     uint64 internal constant LOCK_START = 100;
@@ -51,12 +51,12 @@ contract TermRedeemerTest is Test {
     }
 
     function test_LockRevertsOutsideWindow() public {
-        vm.expectRevert("TermRedeemer: lock not started");
+        vm.expectRevert(abi.encodeWithSelector(LockNotStarted.selector, 1, LOCK_START));
         vm.prank(ALICE);
         redeemer.lock(1 ether, ALICE);
 
         vm.warp(LOCK_END);
-        vm.expectRevert("TermRedeemer: lock closed");
+        vm.expectRevert(abi.encodeWithSelector(LockClosed.selector, LOCK_END, LOCK_END));
         vm.prank(ALICE);
         redeemer.lock(1 ether, ALICE);
     }
@@ -136,7 +136,7 @@ contract TermRedeemerTest is Test {
         vm.warp(LOCK_END);
         redeemer.lockRedemptionRate();
 
-        vm.expectRevert("TermRedeemer: redeem not started");
+        vm.expectRevert(abi.encodeWithSelector(RedeemNotStarted.selector, LOCK_END, REDEEM_START));
         vm.prank(ALICE);
         redeemer.redeem(10 ether, ALICE);
     }
