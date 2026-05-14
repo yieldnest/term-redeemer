@@ -1,0 +1,5 @@
+{
+  "lib/forge-std": {
+    "rev": "c90c02ffa470b46d92ffaab093baeb296300870b"
+  }
+}

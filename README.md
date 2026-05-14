@@ -1,66 +1,25 @@
-## Foundry
+## Term Redeemer
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+This repo contains a simple fixed-term redeemer for a MAX-style vault.
 
-Foundry consists of:
+Flow:
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+1. Between `lockStart` and `lockEnd`, users lock vault shares into `TermRedeemer`.
+2. The contract mints a transferable receipt token 1:1 with the locked shares.
+3. After `lockEnd`, the contract snapshots a fixed `assetPerShare` redemption rate.
+4. At `redeemStart`, the owner can withdraw the exact underlying asset required for all outstanding receipts and approve any residual vault shares to a trusted address.
+5. Receipt holders can then burn receipts for the underlying asset indefinitely.
 
-## Documentation
+Key files:
 
-https://book.getfoundry.sh/
+- `src/TermRedeemer.sol`: core redeemer and receipt token
+- `test/TermRedeemer.t.sol`: timeline and redemption tests
+- `test/mocks/MockERC20.sol`, `test/mocks/MockMaxVault.sol`: local test doubles
 
-## Usage
+Commands:
 
-### Build
-
-```shell
-$ forge build
-```
-
-### Test
-
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+```sh
+forge build
+forge test
+forge fmt
 ```
