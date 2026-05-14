@@ -10,7 +10,7 @@ import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/Safe
 interface IMaxVault is IERC20Metadata {
     function asset() external view returns (address);
     function convertToAssets(uint256 shares) external view returns (uint256);
-    function withdrawAsset(uint256 assets, address receiver) external returns (uint256 sharesBurned);
+    function withdrawAsset(address asset, uint256 assets, address receiver, address owner) external returns (uint256 sharesBurned);
 }
 
 error ZeroAddress();
@@ -142,6 +142,7 @@ contract TermRedeemer is Ownable {
         emit Locked(msg.sender, receiver, shareAmount);
     }
 
+
     function lockRedemptionRate() public returns (uint256 assetPerShare) {
         if (block.timestamp < schedule.lockEnd) {
             revert LockWindowActive(block.timestamp, schedule.lockEnd);
@@ -161,7 +162,7 @@ contract TermRedeemer is Ownable {
         emit RedemptionRateLocked(assetPerShare);
     }
 
-    function prepareRedemption() external onlyOwner returns (uint256 assetsNeeded, uint256 residualShares) {
+    function startRedemption() external returns (uint256 assetsNeeded, uint256 residualShares) {
         if (block.timestamp < schedule.redeemStart) {
             revert RedeemNotStarted(block.timestamp, schedule.redeemStart);
         }
@@ -208,6 +209,6 @@ contract TermRedeemer is Ownable {
     }
 
     function previewAssetsOwed(uint256 receiptAmount) public view returns (uint256) {
-        return receiptAmount * lockedAssetPerShare / shareScale;
+        return mulDiv(receiptAmount, lockedAssetPerShare, shareScale);
     }
 }
