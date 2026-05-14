@@ -26,7 +26,7 @@ contract RedeemableToken is BaseStrategy {
             params.name,
             params.symbol,
             params.decimals_,
-            true,
+            true, // Start paused so roles, assets, provider, and hooks can be configured safely post-init.
             params.countNativeAsset_,
             params.alwaysComputeTotalAssets_,
             params.defaultAssetIndex_
