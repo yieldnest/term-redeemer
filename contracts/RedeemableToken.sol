@@ -7,7 +7,7 @@ import {VaultLib} from "yieldnest-vault/src/library/VaultLib.sol";
 
 error ZeroAddress();
 
-contract TermRedeemer is BaseStrategy {
+contract RedeemableToken is BaseStrategy {
     string public constant TERM_REDEEMER_VERSION = "1.0.0";
 
     address public baseAsset;

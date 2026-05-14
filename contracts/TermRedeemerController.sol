@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IVault} from "yieldnest-vault/src/interface/IVault.sol";
-import {TermRedeemer} from "./TermRedeemer.sol";
+import {RedeemableToken} from "./RedeemableToken.sol";
 import {ProcessAccountingToggleHooks} from "./ProcessAccountingToggleHooks.sol";
 
 error LockNotReady(uint256 timestamp, uint64 lockEnd);
@@ -15,7 +15,7 @@ error DepositTokenNotUnwound(uint256 remainingBalance);
 error InsufficientRedemptionFunding(uint256 requiredAssets, uint256 availableAssets);
 
 contract TermRedeemerController {
-    TermRedeemer public immutable vault;
+    RedeemableToken public immutable vault;
     ProcessAccountingToggleHooks public immutable hooks;
     address public immutable depositToken;
     address public immutable redemptionAsset;
@@ -36,7 +36,7 @@ contract TermRedeemerController {
         uint64 lockEnd_,
         uint64 redeemStart_
     ) {
-        vault = TermRedeemer(payable(vault_));
+        vault = RedeemableToken(payable(vault_));
         hooks = ProcessAccountingToggleHooks(hooks_);
         depositToken = depositToken_;
         redemptionAsset = redemptionAsset_;

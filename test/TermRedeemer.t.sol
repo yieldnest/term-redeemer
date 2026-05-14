@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IVault} from "yieldnest-vault/src/interface/IVault.sol";
 import {HooksLib} from "yieldnest-vault/src/library/HooksLib.sol";
-import {TermRedeemer} from "../contracts/TermRedeemer.sol";
+import {RedeemableToken} from "../contracts/RedeemableToken.sol";
 import {
     AlreadyLocked,
     DepositTokenNotUnwound,
@@ -44,7 +44,7 @@ contract TermRedeemerTest is Test {
     MockERC20 internal wrappedUsdc;
     MockYnRwa internal ynRwa;
     MockRateProvider internal provider;
-    TermRedeemer internal redeemer;
+    RedeemableToken internal redeemer;
     ProcessAccountingToggleHooks internal accountingHooks;
     TermRedeemerController internal controller;
 
@@ -58,12 +58,12 @@ contract TermRedeemerTest is Test {
         provider.setRate(address(usdc), 1e18);
         provider.setRate(address(ynRwa), 11e17);
 
-        TermRedeemer implementation = new TermRedeemer();
+        RedeemableToken implementation = new RedeemableToken();
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
             address(implementation),
             ADMIN,
             abi.encodeCall(
-                TermRedeemer.initialize,
+                RedeemableToken.initialize,
                 (
                     ADMIN,
                     address(provider),
@@ -75,7 +75,7 @@ contract TermRedeemerTest is Test {
                 )
             )
         );
-        redeemer = TermRedeemer(payable(address(proxy)));
+        redeemer = RedeemableToken(payable(address(proxy)));
 
         IHooks.Config memory config = IHooks.Config({
             beforeDeposit: false,
