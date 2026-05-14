@@ -6,11 +6,14 @@ import {ERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 
 interface IMaxVault is IERC20Metadata {
     function asset() external view returns (address);
     function convertToAssets(uint256 shares) external view returns (uint256);
-    function withdrawAsset(address asset, uint256 assets, address receiver, address owner) external returns (uint256 sharesBurned);
+    function withdrawAsset(address asset, uint256 assets, address receiver, address owner)
+        external
+        returns (uint256 sharesBurned);
 }
 
 error ZeroAddress();
@@ -57,12 +60,22 @@ contract TermReceiptToken is ERC20 {
         _burn(from, value);
     }
 
+    function burnFrom(address from, address spender, uint256 value) external {
+        if (msg.sender != minter) {
+            revert ReceiptUnauthorized(msg.sender);
+        }
+
+        _spendAllowance(from, spender, value);
+        _burn(from, value);
+    }
+
     function decimals() public view override returns (uint8) {
         return tokenDecimals;
     }
 }
 
 contract TermRedeemer is Ownable {
+    using Math for uint256;
     using SafeERC20 for IERC20;
 
     struct Schedule {
@@ -121,7 +134,7 @@ contract TermRedeemer is Ownable {
         );
     }
 
-    function lock(uint256 shareAmount, address receiver) external returns (uint256 receiptAmount) {
+    function deposit(uint256 shareAmount, address receiver) external returns (uint256 receiptAmount) {
         if (block.timestamp < schedule.lockStart) {
             revert LockNotStarted(block.timestamp, schedule.lockStart);
         }
@@ -142,7 +155,6 @@ contract TermRedeemer is Ownable {
         emit Locked(msg.sender, receiver, shareAmount);
     }
 
-
     function lockRedemptionRate() public returns (uint256 assetPerShare) {
         if (block.timestamp < schedule.lockEnd) {
             revert LockWindowActive(block.timestamp, schedule.lockEnd);
@@ -162,7 +174,7 @@ contract TermRedeemer is Ownable {
         emit RedemptionRateLocked(assetPerShare);
     }
 
-    function startRedemption() external returns (uint256 assetsNeeded, uint256 residualShares) {
+    function prepareRedemption() external onlyOwner returns (uint256 assetsNeeded, uint256 residualShares) {
         if (block.timestamp < schedule.redeemStart) {
             revert RedeemNotStarted(block.timestamp, schedule.redeemStart);
         }
@@ -174,9 +186,9 @@ contract TermRedeemer is Ownable {
             lockRedemptionRate();
         }
 
-        assetsNeeded = previewAssetsOwed(receiptToken.totalSupply());
+        assetsNeeded = previewRedeem(receiptToken.totalSupply());
         if (assetsNeeded > 0) {
-            vault.withdrawAsset(assetsNeeded, address(this));
+            vault.withdrawAsset(address(asset), assetsNeeded, address(this), address(this));
         }
 
         residualShares = vault.balanceOf(address(this));
@@ -187,28 +199,32 @@ contract TermRedeemer is Ownable {
         emit RedemptionPrepared(assetsNeeded, residualShares);
     }
 
-    function redeem(uint256 receiptAmount, address receiver) external returns (uint256 assetAmount) {
+    function redeem(uint256 receiptAmount, address receiver, address owner_) external returns (uint256 assetAmount) {
         if (block.timestamp < schedule.redeemStart) {
             revert RedeemNotStarted(block.timestamp, schedule.redeemStart);
         }
         if (!rateLocked) {
             revert RateNotLocked();
         }
-        if (receiver == address(0)) {
+        if (receiver == address(0) || owner_ == address(0)) {
             revert ZeroAddress();
         }
         if (receiptAmount == 0) {
             revert ZeroAmount();
         }
 
-        assetAmount = previewAssetsOwed(receiptAmount);
-        receiptToken.burn(msg.sender, receiptAmount);
+        assetAmount = previewRedeem(receiptAmount);
+        if (msg.sender == owner_) {
+            receiptToken.burn(owner_, receiptAmount);
+        } else {
+            receiptToken.burnFrom(owner_, msg.sender, receiptAmount);
+        }
         asset.safeTransfer(receiver, assetAmount);
 
-        emit Redeemed(msg.sender, receiver, receiptAmount, assetAmount);
+        emit Redeemed(owner_, receiver, receiptAmount, assetAmount);
     }
 
-    function previewAssetsOwed(uint256 receiptAmount) public view returns (uint256) {
-        return mulDiv(receiptAmount, lockedAssetPerShare, shareScale);
+    function previewRedeem(uint256 receiptAmount) public view returns (uint256) {
+        return receiptAmount.mulDiv(lockedAssetPerShare, shareScale);
     }
 }

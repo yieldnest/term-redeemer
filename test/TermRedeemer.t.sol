@@ -42,7 +42,7 @@ contract TermRedeemerTest is Test {
         vm.warp(LOCK_START);
 
         vm.prank(ALICE);
-        uint256 minted = redeemer.lock(10 ether, ALICE);
+        uint256 minted = redeemer.deposit(10 ether, ALICE);
 
         assertEq(minted, 10 ether);
         assertEq(receipt.balanceOf(ALICE), 10 ether);
@@ -53,18 +53,18 @@ contract TermRedeemerTest is Test {
     function test_LockRevertsOutsideWindow() public {
         vm.expectRevert(abi.encodeWithSelector(LockNotStarted.selector, 1, LOCK_START));
         vm.prank(ALICE);
-        redeemer.lock(1 ether, ALICE);
+        redeemer.deposit(1 ether, ALICE);
 
         vm.warp(LOCK_END);
         vm.expectRevert(abi.encodeWithSelector(LockClosed.selector, LOCK_END, LOCK_END));
         vm.prank(ALICE);
-        redeemer.lock(1 ether, ALICE);
+        redeemer.deposit(1 ether, ALICE);
     }
 
     function test_RedemptionUsesRateLockedAtEndOfLockPhase() public {
         vm.warp(LOCK_START);
         vm.prank(ALICE);
-        redeemer.lock(100 ether, ALICE);
+        redeemer.deposit(100 ether, ALICE);
 
         vault.setAssetsPerShare(2e6);
 
@@ -79,7 +79,7 @@ contract TermRedeemerTest is Test {
         redeemer.prepareRedemption();
 
         vm.prank(ALICE);
-        uint256 redeemed = redeemer.redeem(100 ether, ALICE);
+        uint256 redeemed = redeemer.redeem(100 ether, ALICE, ALICE);
 
         assertEq(redeemed, 200e6);
         assertEq(usdc.balanceOf(ALICE), 200e6);
@@ -89,10 +89,10 @@ contract TermRedeemerTest is Test {
         vm.warp(LOCK_START);
 
         vm.prank(ALICE);
-        redeemer.lock(100 ether, ALICE);
+        redeemer.deposit(100 ether, ALICE);
 
         vm.prank(BOB);
-        redeemer.lock(50 ether, BOB);
+        redeemer.deposit(50 ether, BOB);
 
         vault.setAssetsPerShare(2e6);
 
@@ -110,7 +110,7 @@ contract TermRedeemerTest is Test {
     function test_PrepareRedemptionLeavesResidualSharesForTrustedSpenderWhenYieldAccruedAfterSnapshot() public {
         vm.warp(LOCK_START);
         vm.prank(ALICE);
-        redeemer.lock(100 ether, ALICE);
+        redeemer.deposit(100 ether, ALICE);
 
         vault.setAssetsPerShare(2e6);
 
@@ -131,20 +131,20 @@ contract TermRedeemerTest is Test {
     function test_RedeemRevertsBeforeMaturity() public {
         vm.warp(LOCK_START);
         vm.prank(ALICE);
-        redeemer.lock(10 ether, ALICE);
+        redeemer.deposit(10 ether, ALICE);
 
         vm.warp(LOCK_END);
         redeemer.lockRedemptionRate();
 
         vm.expectRevert(abi.encodeWithSelector(RedeemNotStarted.selector, LOCK_END, REDEEM_START));
         vm.prank(ALICE);
-        redeemer.redeem(10 ether, ALICE);
+        redeemer.redeem(10 ether, ALICE, ALICE);
     }
 
     function test_ReceiptCanTradeBeforeRedemptionAndHolderCanRedeem() public {
         vm.warp(LOCK_START);
         vm.prank(ALICE);
-        redeemer.lock(40 ether, ALICE);
+        redeemer.deposit(40 ether, ALICE);
 
         vm.prank(ALICE);
         receipt.transfer(BOB, 15 ether);
@@ -156,10 +156,32 @@ contract TermRedeemerTest is Test {
         redeemer.prepareRedemption();
 
         vm.prank(BOB);
-        uint256 redeemed = redeemer.redeem(15 ether, BOB);
+        uint256 redeemed = redeemer.redeem(15 ether, BOB, BOB);
 
         assertEq(redeemed, 30e6);
         assertEq(usdc.balanceOf(BOB), 30e6);
         assertEq(receipt.balanceOf(BOB), 0);
+    }
+
+    function test_ApprovedOperatorCanRedeemForOwner() public {
+        vm.warp(LOCK_START);
+        vm.prank(ALICE);
+        redeemer.deposit(25 ether, ALICE);
+
+        vault.setAssetsPerShare(2e6);
+
+        vm.warp(REDEEM_START);
+        vm.prank(OWNER);
+        redeemer.prepareRedemption();
+
+        vm.prank(ALICE);
+        receipt.approve(BOB, 10 ether);
+
+        vm.prank(BOB);
+        uint256 redeemed = redeemer.redeem(10 ether, BOB, ALICE);
+
+        assertEq(redeemed, 20e6);
+        assertEq(usdc.balanceOf(BOB), 20e6);
+        assertEq(receipt.balanceOf(ALICE), 15 ether);
     }
 }

@@ -41,7 +41,10 @@ contract MockMaxVault is ERC20, IMaxVault {
         return shares * assetsPerShare / (10 ** uint256(tokenDecimals));
     }
 
-    function withdrawAsset(uint256 assets, address receiver) external returns (uint256 sharesBurned) {
+    function withdrawAsset(address, uint256 assets, address receiver, address owner)
+        external
+        returns (uint256 sharesBurned)
+    {
         if (receiver == address(0)) {
             revert MockMaxVaultZeroReceiver();
         }
@@ -49,7 +52,10 @@ contract MockMaxVault is ERC20, IMaxVault {
         uint256 shareScale = 10 ** uint256(tokenDecimals);
         sharesBurned = (assets * shareScale + assetsPerShare - 1) / assetsPerShare;
 
-        _burn(msg.sender, sharesBurned);
+        if (owner != msg.sender) {
+            _spendAllowance(owner, msg.sender, sharesBurned);
+        }
+        _burn(owner, sharesBurned);
         assetToken.safeTransfer(receiver, assets);
     }
 }
