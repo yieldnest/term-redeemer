@@ -62,15 +62,15 @@ contract TermRedeemerTest is Test {
             ADMIN,
             abi.encodeCall(
                 RedeemableToken.initialize,
-                (
-                    ADMIN,
-                    address(provider),
-                    address(wrappedUsdc),
-                    address(usdc),
-                    address(ynRwa),
-                    "Withdrawable ynRWAx",
-                    "wynRWAx"
-                )
+                (RedeemableToken.InitParams({
+                        admin: ADMIN,
+                        name: "Withdrawable ynRWAx",
+                        symbol: "wynRWAx",
+                        decimals_: 18,
+                        countNativeAsset_: false,
+                        alwaysComputeTotalAssets_: false,
+                        defaultAssetIndex_: 1
+                    }))
             )
         );
         redeemer = RedeemableToken(payable(address(proxy)));
@@ -93,9 +93,23 @@ contract TermRedeemerTest is Test {
         );
 
         vm.startPrank(ADMIN);
+        redeemer.grantRole(redeemer.PROCESSOR_ROLE(), ADMIN);
+        redeemer.grantRole(redeemer.PROCESSOR_MANAGER_ROLE(), ADMIN);
+        redeemer.grantRole(redeemer.PROVIDER_MANAGER_ROLE(), ADMIN);
+        redeemer.grantRole(redeemer.ASSET_MANAGER_ROLE(), ADMIN);
+        redeemer.grantRole(redeemer.HOOKS_MANAGER_ROLE(), ADMIN);
+        redeemer.grantRole(redeemer.UNPAUSER_ROLE(), ADMIN);
+        redeemer.setProvider(address(provider));
+        redeemer.addAsset(address(wrappedUsdc), false);
+        redeemer.setAssetWithdrawable(address(wrappedUsdc), false);
+        redeemer.addAsset(address(usdc), false);
+        redeemer.setAssetWithdrawable(address(usdc), false);
+        redeemer.addAsset(address(ynRwa), true);
+        redeemer.setAssetWithdrawable(address(ynRwa), false);
         redeemer.setHooks(address(accountingHooks));
         redeemer.grantRole(redeemer.ASSET_MANAGER_ROLE(), address(controller));
         accountingHooks.grantRole(accountingHooks.TOGGLER_ROLE(), address(controller));
+        redeemer.unpause();
         vm.stopPrank();
 
         ynRwa.mint(ALICE, 200 ether);
