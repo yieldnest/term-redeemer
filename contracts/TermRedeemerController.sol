@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IVault} from "yieldnest-vault/src/interface/IVault.sol";
 import {RedeemableToken} from "./RedeemableToken.sol";
 import {ProcessAccountingToggleHooks} from "./ProcessAccountingToggleHooks.sol";
@@ -11,8 +10,6 @@ error RedeemNotReady(uint256 timestamp, uint64 redeemStart);
 error AlreadyLocked();
 error NotLocked();
 error RedemptionAlreadyActivated();
-error DepositTokenNotUnwound(uint256 remainingBalance);
-error InsufficientRedemptionFunding(uint256 requiredAssets, uint256 availableAssets);
 
 contract TermRedeemerController {
     RedeemableToken public immutable vault;
@@ -76,17 +73,7 @@ contract TermRedeemerController {
             revert NotLocked();
         }
 
-        uint256 remainingDepositTokenBalance = IERC20(depositToken).balanceOf(address(vault));
-        if (remainingDepositTokenBalance != 0) {
-            revert DepositTokenNotUnwound(remainingDepositTokenBalance);
-        }
-
         requiredAssets = vault.previewRedeem(vault.totalSupply());
-        uint256 availableAssets = IERC20(redemptionAsset).balanceOf(address(vault));
-        if (availableAssets < requiredAssets) {
-            revert InsufficientRedemptionFunding(requiredAssets, availableAssets);
-        }
-
         vault.setAssetWithdrawable(redemptionAsset, true);
         redemptionActivated = true;
 

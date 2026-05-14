@@ -8,8 +8,6 @@ import {HooksLib} from "yieldnest-vault/src/library/HooksLib.sol";
 import {RedeemableToken} from "../contracts/RedeemableToken.sol";
 import {
     AlreadyLocked,
-    DepositTokenNotUnwound,
-    InsufficientRedemptionFunding,
     LockNotReady,
     RedeemNotReady,
     TermRedeemerController
@@ -176,8 +174,10 @@ contract TermRedeemerTest is Test {
         controller.lock();
 
         vm.warp(REDEEM_START);
-        vm.expectRevert(abi.encodeWithSelector(DepositTokenNotUnwound.selector, 100 ether));
-        controller.activateRedemption();
+        uint256 requiredAssets = controller.activateRedemption();
+        assertEq(requiredAssets, 119_999_999);
+        assertTrue(controller.redemptionActivated());
+        assertEq(redeemer.maxRedeem(ALICE), 0);
 
         ynRwa.setUsdcPerShare(1_200_000);
         usdc.mint(address(ynRwa), 120e6);
@@ -196,10 +196,6 @@ contract TermRedeemerTest is Test {
 
         assertEq(ynRwa.balanceOf(address(redeemer)), 0);
         assertEq(usdc.balanceOf(address(redeemer)), 120e6);
-
-        uint256 requiredAssets = controller.activateRedemption();
-        assertEq(requiredAssets, 119_999_999);
-        assertTrue(controller.redemptionActivated());
         assertEq(redeemer.maxRedeem(ALICE), 110 ether);
 
         vm.prank(ALICE);
@@ -208,35 +204,6 @@ contract TermRedeemerTest is Test {
         assertEq(assets, 119_999_999);
         assertEq(usdc.balanceOf(ALICE), 119_999_999);
         assertEq(redeemer.balanceOf(ALICE), 0);
-    }
-
-    function test_ActivateRedemptionRevertsWhenUsdcFundingIsShort() public {
-        vm.prank(ALICE);
-        redeemer.depositAsset(address(ynRwa), 100 ether, ALICE);
-
-        provider.setRate(address(ynRwa), 12e17);
-
-        vm.warp(LOCK_END);
-        controller.lock();
-
-        ynRwa.setUsdcPerShare(1_000_000);
-        usdc.mint(address(ynRwa), 100e6);
-
-        _allowProcessorRedeem();
-
-        bytes[] memory data = new bytes[](1);
-        address[] memory targets = new address[](1);
-        uint256[] memory values = new uint256[](1);
-
-        targets[0] = address(ynRwa);
-        data[0] = abi.encodeWithSelector(MockYnRwa.redeem.selector, 100 ether, address(redeemer), address(redeemer));
-
-        vm.prank(ADMIN);
-        redeemer.processor(targets, values, data);
-
-        vm.warp(REDEEM_START);
-        vm.expectRevert(abi.encodeWithSelector(InsufficientRedemptionFunding.selector, 119_999_999, 100e6));
-        controller.activateRedemption();
     }
 
     function _allowProcessorRedeem() internal {
