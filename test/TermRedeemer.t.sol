@@ -169,6 +169,32 @@ contract TermRedeemerTest is Test {
         controller.lock();
     }
 
+    function test_YieldAccrualBenefitsHoldersBeforeLockAndFeeRecipientAfterLock() public {
+        vm.prank(ALICE);
+        redeemer.depositAsset(address(ynRwa), 100 ether, ALICE);
+
+        uint256 previewAtDeposit = redeemer.previewRedeem(110 ether);
+        assertEq(previewAtDeposit, 110e6);
+
+        provider.setRate(address(ynRwa), 12e17);
+        redeemer.processAccounting();
+
+        uint256 previewBeforeLock = redeemer.previewRedeem(110 ether);
+        assertEq(previewBeforeLock, 119_999_999);
+        assertEq(redeemer.balanceOf(FEE_RECIPIENT), 0);
+
+        vm.warp(LOCK_END);
+        controller.lock();
+        assertEq(feeHooks.performanceFee(), 1 ether);
+
+        provider.setRate(address(ynRwa), 132e16);
+        redeemer.processAccounting();
+
+        uint256 previewAfterLock = redeemer.previewRedeem(110 ether);
+        assertEq(previewAfterLock, previewBeforeLock);
+        assertGt(redeemer.balanceOf(FEE_RECIPIENT), 0);
+    }
+
     function test_ActivateRedemptionRevertsBeforeRedeemTime() public {
         vm.warp(LOCK_END);
         controller.lock();
