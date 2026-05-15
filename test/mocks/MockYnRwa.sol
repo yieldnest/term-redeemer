@@ -10,6 +10,8 @@ contract MockYnRwa is ERC20 {
     using Math for uint256;
     using SafeERC20 for IERC20;
 
+    error InvalidAsset(address asset);
+
     IERC20 public immutable usdc;
     uint256 public usdcPerShare;
 
@@ -29,12 +31,27 @@ contract MockYnRwa is ERC20 {
         assets = shares.mulDiv(usdcPerShare, 10 ** decimals());
     }
 
-    function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets) {
+    function previewWithdrawAsset(address asset_, uint256 assets) public view returns (uint256 shares) {
+        if (asset_ != address(usdc)) {
+            revert InvalidAsset(asset_);
+        }
+
+        shares = assets.mulDiv(10 ** decimals(), usdcPerShare);
+    }
+
+    function withdrawAsset(address asset_, uint256 assets, address receiver, address owner)
+        public
+        returns (uint256 shares)
+    {
+        if (asset_ != address(usdc)) {
+            revert InvalidAsset(asset_);
+        }
+
+        shares = previewWithdrawAsset(asset_, assets);
         if (msg.sender != owner) {
             _spendAllowance(owner, msg.sender, shares);
         }
 
-        assets = previewRedeem(shares);
         _burn(owner, shares);
         usdc.safeTransfer(receiver, assets);
     }

@@ -203,7 +203,9 @@ contract TermRedeemerTest is Test {
         uint256[] memory values = new uint256[](1);
 
         targets[0] = address(ynRwa);
-        data[0] = abi.encodeWithSelector(MockYnRwa.redeem.selector, 100 ether, address(redeemer), address(redeemer));
+        data[0] = abi.encodeWithSelector(
+            MockYnRwa.withdrawAsset.selector, address(usdc), 120e6, address(redeemer), address(redeemer)
+        );
 
         vm.prank(ADMIN);
         redeemer.processor(targets, values, data);
@@ -221,11 +223,14 @@ contract TermRedeemerTest is Test {
     }
 
     function _allowProcessorRedeem() internal {
-        address[] memory allowList = new address[](1);
-        allowList[0] = address(redeemer);
-        ParamRule[] memory paramRules = new ParamRule[](3);
-        paramRules[1] = ParamRule({paramType: 1, isArray: false, allowList: allowList});
-        paramRules[2] = ParamRule({paramType: 1, isArray: false, allowList: allowList});
+        address[] memory vaultAllowList = new address[](1);
+        vaultAllowList[0] = address(redeemer);
+        address[] memory assetAllowList = new address[](1);
+        assetAllowList[0] = address(usdc);
+        ParamRule[] memory paramRules = new ParamRule[](4);
+        paramRules[0] = ParamRule({paramType: 1, isArray: false, allowList: assetAllowList});
+        paramRules[2] = ParamRule({paramType: 1, isArray: false, allowList: vaultAllowList});
+        paramRules[3] = ParamRule({paramType: 1, isArray: false, allowList: vaultAllowList});
         FunctionRule memory rule = FunctionRule({isActive: true, paramRules: paramRules, validator: address(0)});
 
         vm.prank(ADMIN);
@@ -234,7 +239,7 @@ contract TermRedeemerTest is Test {
                 abi.encodeWithSignature(
                     "setProcessorRule(address,bytes4,(bool,(uint8,bool,address[])[],address))",
                     address(ynRwa),
-                    MockYnRwa.redeem.selector,
+                    MockYnRwa.withdrawAsset.selector,
                     rule
                 )
             );
