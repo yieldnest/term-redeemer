@@ -1,22 +1,45 @@
-## Term Redeemer
+## Redeemable Token
 
-This repo contains a simple fixed-term redeemer for a MAX-style vault.
+This repo implements a term redemption system on top of YieldNest's `BaseStrategy`.
 
-Flow:
+### Overview
 
-1. Between `lockStart` and `lockEnd`, users lock vault shares into `RedeemableToken`.
-2. The contract mints a transferable receipt token 1:1 with the locked shares.
-3. After `lockEnd`, the contract snapshots a fixed `assetPerShare` redemption rate.
-4. At `redeemStart`, the owner can withdraw the exact underlying asset required for all outstanding receipts and approve any residual vault shares to a trusted address.
-5. Receipt holders can then burn receipts for the underlying asset indefinitely.
+The system has three main pieces:
 
-Key files:
+- `RedeemableToken`
+  - a `BaseStrategy` vault whose share token is the redeemable claim token
+  - accepts `ynRWAx` as the deposit asset
+  - uses `USDC` as the default redemption asset
 
-- `contracts/RedeemableToken.sol`: core redeemable vault token
-- `test/TermRedeemer.t.sol`: timeline and redemption tests
-- `test/mocks/MockERC20.sol`, `test/mocks/MockMaxVault.sol`: local test doubles
+- `TermRedeemerController`
+  - controls the lifecycle after deployment
+  - at `lockEnd`, it finalizes the lock stage by processing accounting once, disabling new `ynRWAx` deposits, and setting the vault fee hook to `100%` performance fee
+  - at `redeemStart`, it activates `USDC` withdrawals
 
-Commands:
+- `FeeHooks`
+  - starts with `0%` performance fee
+  - after lock, the controller sets it to `100%`
+  - this allows `processAccounting()` to keep running while diverting post-lock gains to the fee recipient instead of changing redeemer economics
+
+### Flow
+
+1. The vault is initialized paused, then configured externally with roles, provider, assets, and hooks.
+2. Users deposit `ynRWAx` into `RedeemableToken` and receive `wynRWAx`.
+3. When the lock period is over, `lock()` is called on the controller:
+   - accounting is processed once
+   - `ynRWAx` is marked non-depositable
+   - the performance fee is set to `100%`
+4. After that point, later accounting gains are captured by the fee recipient, while holder redemption value remains stable.
+5. When the redeem stage starts, `activateRedemption()` enables `USDC` withdrawals.
+6. The vault can unwind held `ynRWAx` into `USDC`, and `wynRWAx` holders redeem against the funded `USDC` balance.
+
+### Key Files
+
+- `contracts/RedeemableToken.sol`
+- `contracts/TermRedeemerController.sol`
+- `test/TermRedeemer.t.sol`
+
+### Commands
 
 ```sh
 forge build
