@@ -21,6 +21,33 @@ The system has three main pieces:
   - after lock, the controller sets it to `100%`
   - this allows `processAccounting()` to keep running while diverting post-lock gains to the fee recipient instead of changing redeemer economics
 
+### Architecture
+
+```mermaid
+flowchart LR
+    U[User]
+    Y[ynRWAx]
+    V[RedeemableToken<br/>BaseStrategy Vault]
+    C[TermRedeemerController]
+    H[FeeHooks]
+    P[Rate Provider]
+    R[USDC]
+    F[Fee Recipient]
+
+    U -->|depositAsset ynRWAx| V
+    Y -->|held by vault| V
+    V -->|mint wynRWAx shares| U
+
+    C -->|lock / activateRedemption| V
+    C -->|setPerformanceFee 100%| H
+    V -->|hooks callbacks| H
+    V -->|getRate| P
+
+    V -->|withdrawAsset USDC| U
+    V -->|post-lock fee shares| F
+    R -->|funds redemption balance| V
+```
+
 ### Flow
 
 1. The vault is initialized paused, then configured externally with roles, provider, assets, and hooks.
@@ -32,6 +59,39 @@ The system has three main pieces:
 4. After that point, later accounting gains are captured by the fee recipient, while holder redemption value remains stable.
 5. When the redeem stage starts, `activateRedemption()` enables `USDC` withdrawals.
 6. The vault can unwind held `ynRWAx` into `USDC`, and `wynRWAx` holders redeem against the funded `USDC` balance.
+
+### Lifecycle
+
+```mermaid
+sequenceDiagram
+    participant Admin
+    participant Controller
+    participant Vault as RedeemableToken
+    participant Hook as FeeHooks
+    participant User
+    participant ynRWAx
+    participant USDC
+
+    Admin->>Vault: configure roles, provider, assets, hooks
+    Admin->>Vault: unpause()
+
+    User->>Vault: depositAsset(ynRWAx)
+    Vault->>User: mint wynRWAx
+
+    Admin->>Controller: lock() after lockEnd
+    Controller->>Vault: processAccounting()
+    Controller->>Vault: disable ynRWAx deposits
+    Controller->>Hook: setPerformanceFee(100%)
+
+    Admin->>Vault: processor(...) unwind ynRWAx
+    ynRWAx->>Vault: USDC from withdrawAsset(...)
+
+    Admin->>Controller: activateRedemption() after redeemStart
+    Controller->>Vault: setAssetWithdrawable(USDC, true)
+
+    User->>Vault: redeem(wynRWAx)
+    Vault->>User: transfer USDC
+```
 
 ### Key Files
 
