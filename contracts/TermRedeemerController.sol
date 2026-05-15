@@ -2,8 +2,8 @@
 pragma solidity ^0.8.24;
 
 import {IVault} from "yieldnest-vault/src/interface/IVault.sol";
+import {IFeeHooks} from "yieldnest-vault/src/interface/IFeeHooks.sol";
 import {RedeemableToken} from "./RedeemableToken.sol";
-import {ProcessAccountingToggleHooks} from "./ProcessAccountingToggleHooks.sol";
 
 error LockNotReady(uint256 timestamp, uint64 lockEnd);
 error RedeemNotReady(uint256 timestamp, uint64 redeemStart);
@@ -12,8 +12,10 @@ error NotLocked();
 error RedemptionAlreadyActivated();
 
 contract TermRedeemerController {
+    uint256 internal constant FEE_DENOMINATOR = 1 ether;
+
     RedeemableToken public immutable vault;
-    ProcessAccountingToggleHooks public immutable hooks;
+    IFeeHooks public immutable hooks;
     address public immutable depositToken;
     address public immutable redemptionAsset;
     uint64 public immutable lockEnd;
@@ -34,7 +36,7 @@ contract TermRedeemerController {
         uint64 redeemStart_
     ) {
         vault = RedeemableToken(payable(vault_));
-        hooks = ProcessAccountingToggleHooks(hooks_);
+        hooks = IFeeHooks(hooks_);
         depositToken = depositToken_;
         redemptionAsset = redemptionAsset_;
         lockEnd = lockEnd_;
@@ -54,7 +56,7 @@ contract TermRedeemerController {
         IVault.AssetParams memory params = vault.getAsset(depositToken);
         IVault.AssetUpdateFields memory fields = IVault.AssetUpdateFields({active: false});
         vault.updateAsset(params.index, fields);
-        hooks.setProcessAccountingBlocked(true);
+        hooks.setPerformanceFee(FEE_DENOMINATOR);
 
         locked = true;
         totalAssetsSnapshot = vault.totalAssets();

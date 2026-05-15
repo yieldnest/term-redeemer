@@ -4,15 +4,14 @@ pragma solidity ^0.8.24;
 import {Test} from "forge-std/Test.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IVault} from "yieldnest-vault/src/interface/IVault.sol";
-import {HooksLib} from "yieldnest-vault/src/library/HooksLib.sol";
 import {RedeemableToken} from "../contracts/RedeemableToken.sol";
+import {FeeHooks} from "yieldnest-vault/src/hooks/FeeHooks.sol";
 import {
     AlreadyLocked,
     LockNotReady,
     RedeemNotReady,
     TermRedeemerController
 } from "../contracts/TermRedeemerController.sol";
-import {ProcessAccountingBlocked, ProcessAccountingToggleHooks} from "../contracts/ProcessAccountingToggleHooks.sol";
 import {MockERC20} from "./mocks/MockERC20.sol";
 import {MockRateProvider} from "./mocks/MockRateProvider.sol";
 import {MockYnRwa} from "./mocks/MockYnRwa.sol";
@@ -43,8 +42,9 @@ contract TermRedeemerTest is Test {
     MockYnRwa internal ynRwa;
     MockRateProvider internal provider;
     RedeemableToken internal redeemer;
-    ProcessAccountingToggleHooks internal accountingHooks;
+    FeeHooks internal feeHooks;
     TermRedeemerController internal controller;
+    address internal constant FEE_RECIPIENT = address(0xFEE);
 
     function setUp() public {
         usdc = new MockERC20("USD Coin", "USDC", 6);
@@ -84,12 +84,12 @@ contract TermRedeemerTest is Test {
             afterRedeem: false,
             beforeWithdraw: false,
             afterWithdraw: false,
-            beforeProcessAccounting: true,
-            afterProcessAccounting: false
+            beforeProcessAccounting: false,
+            afterProcessAccounting: true
         });
-        accountingHooks = new ProcessAccountingToggleHooks(address(redeemer), ADMIN, config);
+        feeHooks = new FeeHooks(address(redeemer), ADMIN, 0, FEE_RECIPIENT, config);
         controller = new TermRedeemerController(
-            address(redeemer), address(accountingHooks), address(ynRwa), address(usdc), LOCK_END, REDEEM_START
+            address(redeemer), address(feeHooks), address(ynRwa), address(usdc), LOCK_END, REDEEM_START
         );
 
         vm.startPrank(ADMIN);
@@ -106,9 +106,9 @@ contract TermRedeemerTest is Test {
         redeemer.setAssetWithdrawable(address(usdc), false);
         redeemer.addAsset(address(ynRwa), true);
         redeemer.setAssetWithdrawable(address(ynRwa), false);
-        redeemer.setHooks(address(accountingHooks));
+        redeemer.setHooks(address(feeHooks));
         redeemer.grantRole(redeemer.ASSET_MANAGER_ROLE(), address(controller));
-        accountingHooks.grantRole(accountingHooks.TOGGLER_ROLE(), address(controller));
+        feeHooks.transferOwnership(address(controller));
         redeemer.unpause();
         vm.stopPrank();
 
@@ -138,7 +138,7 @@ contract TermRedeemerTest is Test {
         controller.lock();
     }
 
-    function test_LockDisablesDepositsAndBlocksAccounting() public {
+    function test_LockDisablesDepositsAndDivertsPostLockGains() public {
         vm.prank(ALICE);
         redeemer.depositAsset(address(ynRwa), 100 ether, ALICE);
 
@@ -146,21 +146,20 @@ contract TermRedeemerTest is Test {
 
         vm.warp(LOCK_END);
         uint256 totalAssetsSnapshot = controller.lock();
+        uint256 previewBeforeYield = redeemer.previewRedeem(110 ether);
 
         assertEq(totalAssetsSnapshot, 120e6);
         assertEq(redeemer.totalBaseAssets(), 120 ether);
-        assertEq(redeemer.previewRedeem(110 ether), 119_999_999);
+        assertEq(previewBeforeYield, 119_999_999);
         assertTrue(controller.locked());
-        assertTrue(accountingHooks.processAccountingBlocked());
+        assertEq(feeHooks.performanceFee(), 1 ether);
 
-        provider.setRate(address(ynRwa), 14e17);
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                HooksLib.HookCallFailed.selector, abi.encodeWithSelector(ProcessAccountingBlocked.selector)
-            )
-        );
+        provider.setRate(address(ynRwa), 132e16);
         redeemer.processAccounting();
+
+        assertEq(redeemer.totalBaseAssets(), 132 ether);
+        assertEq(redeemer.previewRedeem(110 ether), previewBeforeYield);
+        assertGt(redeemer.balanceOf(FEE_RECIPIENT), 0);
 
         vm.prank(BOB);
         vm.expectRevert(IVault.AssetNotActive.selector);
