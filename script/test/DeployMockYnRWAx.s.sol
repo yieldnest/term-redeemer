@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {RedeemableToken} from "../../contracts/RedeemableToken.sol";
-import {TestRateProvider} from "./utils/TestRateProvider.sol";
+import {MockRateProvider} from "../../test/mocks/MockRateProvider.sol";
 import {BaseTestScript} from "./BaseTestScript.s.sol";
 import {Contracts} from "./Contracts.sol";
 
@@ -12,7 +12,7 @@ contract DeployMockYnRWAx is BaseTestScript {
         vm.startBroadcast();
 
         address admin = _broadcaster();
-        TestRateProvider provider = new TestRateProvider();
+        MockRateProvider provider = new MockRateProvider();
         provider.setRate(Contracts.USDC, Contracts.ONE);
 
         RedeemableToken implementation = new RedeemableToken();

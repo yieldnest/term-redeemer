@@ -5,7 +5,7 @@ import {RedeemableToken} from "../../contracts/RedeemableToken.sol";
 import {FeeHooks} from "yieldnest-vault/src/hooks/FeeHooks.sol";
 import {BaseTestScript} from "./BaseTestScript.s.sol";
 import {Contracts} from "./Contracts.sol";
-import {TestRateProvider} from "./utils/TestRateProvider.sol";
+import {MockRateProvider} from "../../test/mocks/MockRateProvider.sol";
 import {TestRedeemableTokenFactory} from "./utils/TestRedeemableTokenFactory.sol";
 import {TestTermRedeemerController} from "./utils/TestTermRedeemerController.sol";
 
@@ -30,7 +30,7 @@ contract DeployTermRedeemer is BaseTestScript {
 
         vm.startBroadcast();
 
-        TestRateProvider provider = new TestRateProvider();
+        MockRateProvider provider = new MockRateProvider();
         provider.setRate(Contracts.USDC, Contracts.ONE);
         provider.setRate(mockYnRWAx, Contracts.ONE);
 
