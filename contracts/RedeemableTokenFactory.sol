@@ -27,6 +27,7 @@ contract RedeemableTokenFactory {
         uint8 decimals;
         bool countNativeAsset;
         bool alwaysComputeTotalAssets;
+        bool unrestrictedController;
         uint256 defaultAssetIndex;
         uint64 lockEnd;
         uint64 redeemStart;
@@ -84,7 +85,14 @@ contract RedeemableTokenFactory {
 
         hooks = new FeeHooks(address(vault), address(this), 0, params.feeRecipient, config);
         controller = new TermRedeemerController(
-            address(vault), address(hooks), params.depositToken, params.redemptionAsset, params.lockEnd, params.redeemStart
+            address(vault),
+            address(hooks),
+            params.admin,
+            params.depositToken,
+            params.redemptionAsset,
+            params.lockEnd,
+            params.redeemStart,
+            params.unrestrictedController
         );
 
         _grantTemporaryRoles(vault);
@@ -96,9 +104,8 @@ contract RedeemableTokenFactory {
 
     function _validate(DeployParams calldata params) internal pure {
         if (
-            params.admin == address(0) || params.provider == address(0) || params.wrappedAsset == address(0)
-                || params.redemptionAsset == address(0) || params.depositToken == address(0)
-                || params.feeRecipient == address(0)
+            params.admin == address(0) || params.provider == address(0) || params.redemptionAsset == address(0)
+                || params.depositToken == address(0) || params.feeRecipient == address(0)
         ) {
             revert ZeroAddress();
         }
@@ -124,8 +131,13 @@ contract RedeemableTokenFactory {
         DeployParams calldata params
     ) internal {
         vault.setProvider(params.provider);
-        vault.addAsset(params.wrappedAsset, false);
-        vault.setAssetWithdrawable(params.wrappedAsset, false);
+        if (
+            params.wrappedAsset != address(0) && params.wrappedAsset != params.redemptionAsset
+                && params.wrappedAsset != params.depositToken
+        ) {
+            vault.addAsset(params.wrappedAsset, false);
+            vault.setAssetWithdrawable(params.wrappedAsset, false);
+        }
         vault.addAsset(params.redemptionAsset, false);
         vault.setAssetWithdrawable(params.redemptionAsset, false);
         vault.addAsset(params.depositToken, true);

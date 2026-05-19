@@ -148,6 +148,7 @@ contract RedeemableTokenForkTest is Test {
                 decimals: 18,
                 countNativeAsset: false,
                 alwaysComputeTotalAssets: false,
+                unrestrictedController: false,
                 defaultAssetIndex: 1,
                 lockEnd: LOCK_END,
                 redeemStart: REDEEM_START
