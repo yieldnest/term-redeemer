@@ -4,17 +4,17 @@ pragma solidity ^0.8.24;
 import {Test} from "forge-std/Test.sol";
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IVault} from "yieldnest-vault/src/interface/IVault.sol";
-import {RedeemableToken} from "../contracts/RedeemableToken.sol";
+import {RedeemableToken} from "../../contracts/RedeemableToken.sol";
 import {FeeHooks} from "yieldnest-vault/src/hooks/FeeHooks.sol";
 import {
     AlreadyLocked,
     LockNotReady,
     RedeemNotReady,
     TermRedeemerController
-} from "../contracts/TermRedeemerController.sol";
-import {MockERC20} from "./mocks/MockERC20.sol";
-import {MockRateProvider} from "./mocks/MockRateProvider.sol";
-import {MockYnRwa} from "./mocks/MockYnRwa.sol";
+} from "../../contracts/TermRedeemerController.sol";
+import {MockERC20} from "../mocks/MockERC20.sol";
+import {MockRateProvider} from "../mocks/MockRateProvider.sol";
+import {MockYnRwa} from "../mocks/MockYnRwa.sol";
 import {IHooks} from "yieldnest-vault/src/interface/IHooks.sol";
 
 contract TermRedeemerTest is Test {

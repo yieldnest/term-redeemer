@@ -58,8 +58,7 @@ contract RedeemableTokenForkTest is Test {
             return;
         }
 
-        string memory rpcUrl = vm.envString("MAINNET_RPC_URL");
-        vm.createSelectFork(rpcUrl);
+        vm.createSelectFork("eth_mainnet");
         forkEnabled = true;
 
         ynRwa = IYnRwa(YNRWAX);
