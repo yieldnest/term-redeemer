@@ -51,16 +51,8 @@ contract RedeemableTokenForkTest is Test {
     RedeemableToken internal redeemer;
     FeeHooks internal feeHooks;
     TermRedeemerController internal controller;
-    bool internal forkEnabled;
 
     function setUp() public {
-        if (!vm.envExists("MAINNET_RPC_URL")) {
-            return;
-        }
-
-        vm.createSelectFork("eth_mainnet");
-        forkEnabled = true;
-
         ynRwa = IYnRwa(YNRWAX);
         usdc = IERC20(USDC);
         wrappedUsdc = new MockERC20("Wrapped USDC", "wUSDC", 18);
@@ -72,10 +64,6 @@ contract RedeemableTokenForkTest is Test {
     }
 
     function test_Fork_LiveYnRwaLifecycleWithUsdcTopUp() public {
-        if (!forkEnabled) {
-            return;
-        }
-
         deal(YNRWAX, ALICE, DEPOSIT_AMOUNT);
 
         vm.prank(ALICE);
