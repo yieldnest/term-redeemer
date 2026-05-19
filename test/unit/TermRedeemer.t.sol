@@ -2,9 +2,9 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IVault} from "yieldnest-vault/src/interface/IVault.sol";
 import {RedeemableToken} from "../../contracts/RedeemableToken.sol";
+import {RedeemableTokenFactory} from "../../contracts/RedeemableTokenFactory.sol";
 import {FeeHooks} from "yieldnest-vault/src/hooks/FeeHooks.sol";
 import {
     AlreadyLocked,
@@ -15,7 +15,6 @@ import {
 import {MockERC20} from "../mocks/MockERC20.sol";
 import {MockRateProvider} from "../mocks/MockRateProvider.sol";
 import {MockYnRwa} from "../mocks/MockYnRwa.sol";
-import {IHooks} from "yieldnest-vault/src/interface/IHooks.sol";
 
 contract TermRedeemerTest is Test {
     struct ParamRule {
@@ -57,60 +56,25 @@ contract TermRedeemerTest is Test {
         provider.setRate(address(ynRwa), 11e17);
 
         RedeemableToken implementation = new RedeemableToken();
-        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            address(implementation),
-            ADMIN,
-            abi.encodeCall(
-                RedeemableToken.initialize,
-                (RedeemableToken.InitParams({
-                        admin: ADMIN,
-                        name: "Withdrawable ynRWAx",
-                        symbol: "wynRWAx",
-                        decimals_: 18,
-                        countNativeAsset_: false,
-                        alwaysComputeTotalAssets_: false,
-                        defaultAssetIndex_: 1
-                    }))
-            )
+        RedeemableTokenFactory factory = new RedeemableTokenFactory(address(implementation));
+        (redeemer, feeHooks, controller) = factory.deploy(
+            RedeemableTokenFactory.DeployParams({
+                admin: ADMIN,
+                provider: address(provider),
+                wrappedAsset: address(wrappedUsdc),
+                redemptionAsset: address(usdc),
+                depositToken: address(ynRwa),
+                feeRecipient: FEE_RECIPIENT,
+                name: "Withdrawable ynRWAx",
+                symbol: "wynRWAx",
+                decimals: 18,
+                countNativeAsset: false,
+                alwaysComputeTotalAssets: false,
+                defaultAssetIndex: 1,
+                lockEnd: LOCK_END,
+                redeemStart: REDEEM_START
+            })
         );
-        redeemer = RedeemableToken(payable(address(proxy)));
-
-        IHooks.Config memory config = IHooks.Config({
-            beforeDeposit: false,
-            afterDeposit: false,
-            beforeMint: false,
-            afterMint: false,
-            beforeRedeem: false,
-            afterRedeem: false,
-            beforeWithdraw: false,
-            afterWithdraw: false,
-            beforeProcessAccounting: false,
-            afterProcessAccounting: true
-        });
-        feeHooks = new FeeHooks(address(redeemer), ADMIN, 0, FEE_RECIPIENT, config);
-        controller = new TermRedeemerController(
-            address(redeemer), address(feeHooks), address(ynRwa), address(usdc), LOCK_END, REDEEM_START
-        );
-
-        vm.startPrank(ADMIN);
-        redeemer.grantRole(redeemer.PROCESSOR_ROLE(), ADMIN);
-        redeemer.grantRole(redeemer.PROCESSOR_MANAGER_ROLE(), ADMIN);
-        redeemer.grantRole(redeemer.PROVIDER_MANAGER_ROLE(), ADMIN);
-        redeemer.grantRole(redeemer.ASSET_MANAGER_ROLE(), ADMIN);
-        redeemer.grantRole(redeemer.HOOKS_MANAGER_ROLE(), ADMIN);
-        redeemer.grantRole(redeemer.UNPAUSER_ROLE(), ADMIN);
-        redeemer.setProvider(address(provider));
-        redeemer.addAsset(address(wrappedUsdc), false);
-        redeemer.setAssetWithdrawable(address(wrappedUsdc), false);
-        redeemer.addAsset(address(usdc), false);
-        redeemer.setAssetWithdrawable(address(usdc), false);
-        redeemer.addAsset(address(ynRwa), true);
-        redeemer.setAssetWithdrawable(address(ynRwa), false);
-        redeemer.setHooks(address(feeHooks));
-        redeemer.grantRole(redeemer.ASSET_MANAGER_ROLE(), address(controller));
-        feeHooks.transferOwnership(address(controller));
-        redeemer.unpause();
-        vm.stopPrank();
 
         ynRwa.mint(ALICE, 200 ether);
         ynRwa.mint(BOB, 100 ether);

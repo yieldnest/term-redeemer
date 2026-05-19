@@ -2,12 +2,11 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IVault} from "yieldnest-vault/src/interface/IVault.sol";
-import {IHooks} from "yieldnest-vault/src/interface/IHooks.sol";
 import {FeeHooks} from "yieldnest-vault/src/hooks/FeeHooks.sol";
 import {RedeemableToken} from "../../contracts/RedeemableToken.sol";
+import {RedeemableTokenFactory} from "../../contracts/RedeemableTokenFactory.sol";
 import {TermRedeemerController} from "../../contracts/TermRedeemerController.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
 import {MockRateProvider} from "../mocks/MockRateProvider.sol";
@@ -65,7 +64,6 @@ contract RedeemableTokenForkTest is Test {
 
         _syncRates();
         _deployRedeemer();
-        _configureRedeemer();
     }
 
     function test_Fork_LiveYnRwaLifecycleWithUsdcTopUp() public {
@@ -136,62 +134,25 @@ contract RedeemableTokenForkTest is Test {
 
     function _deployRedeemer() internal {
         RedeemableToken implementation = new RedeemableToken();
-        TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
-            address(implementation),
-            ADMIN,
-            abi.encodeCall(
-                RedeemableToken.initialize,
-                (RedeemableToken.InitParams({
-                        admin: ADMIN,
-                        name: "Withdrawable ynRWAx",
-                        symbol: "wynRWAx",
-                        decimals_: 18,
-                        countNativeAsset_: false,
-                        alwaysComputeTotalAssets_: false,
-                        defaultAssetIndex_: 1
-                    }))
-            )
+        RedeemableTokenFactory factory = new RedeemableTokenFactory(address(implementation));
+        (redeemer, feeHooks, controller) = factory.deploy(
+            RedeemableTokenFactory.DeployParams({
+                admin: ADMIN,
+                provider: address(provider),
+                wrappedAsset: address(wrappedUsdc),
+                redemptionAsset: USDC,
+                depositToken: YNRWAX,
+                feeRecipient: FEE_RECIPIENT,
+                name: "Withdrawable ynRWAx",
+                symbol: "wynRWAx",
+                decimals: 18,
+                countNativeAsset: false,
+                alwaysComputeTotalAssets: false,
+                defaultAssetIndex: 1,
+                lockEnd: LOCK_END,
+                redeemStart: REDEEM_START
+            })
         );
-        redeemer = RedeemableToken(payable(address(proxy)));
-
-        IHooks.Config memory config = IHooks.Config({
-            beforeDeposit: false,
-            afterDeposit: false,
-            beforeMint: false,
-            afterMint: false,
-            beforeRedeem: false,
-            afterRedeem: false,
-            beforeWithdraw: false,
-            afterWithdraw: false,
-            beforeProcessAccounting: false,
-            afterProcessAccounting: true
-        });
-        feeHooks = new FeeHooks(address(redeemer), ADMIN, 0, FEE_RECIPIENT, config);
-        controller =
-            new TermRedeemerController(address(redeemer), address(feeHooks), YNRWAX, USDC, LOCK_END, REDEEM_START);
-    }
-
-    function _configureRedeemer() internal {
-        vm.startPrank(ADMIN);
-        redeemer.grantRole(redeemer.PROCESSOR_ROLE(), ADMIN);
-        redeemer.grantRole(redeemer.PROCESSOR_MANAGER_ROLE(), ADMIN);
-        redeemer.grantRole(redeemer.PROVIDER_MANAGER_ROLE(), ADMIN);
-        redeemer.grantRole(redeemer.ASSET_MANAGER_ROLE(), ADMIN);
-        redeemer.grantRole(redeemer.HOOKS_MANAGER_ROLE(), ADMIN);
-        redeemer.grantRole(redeemer.UNPAUSER_ROLE(), ADMIN);
-
-        redeemer.setProvider(address(provider));
-        redeemer.addAsset(address(wrappedUsdc), false);
-        redeemer.setAssetWithdrawable(address(wrappedUsdc), false);
-        redeemer.addAsset(USDC, false);
-        redeemer.setAssetWithdrawable(USDC, false);
-        redeemer.addAsset(YNRWAX, true);
-        redeemer.setAssetWithdrawable(YNRWAX, false);
-        redeemer.setHooks(address(feeHooks));
-        redeemer.grantRole(redeemer.ASSET_MANAGER_ROLE(), address(controller));
-        feeHooks.transferOwnership(address(controller));
-        redeemer.unpause();
-        vm.stopPrank();
     }
 
     function _syncRates() internal {
