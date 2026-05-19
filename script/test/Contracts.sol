@@ -6,16 +6,18 @@ library Contracts {
 
     string internal constant AMOUNT_ENV = "AMOUNT";
 
-    string internal constant MOCK_YNRWAX_PROVIDER_KEY = "mock-ynrwax-provider";
-    string internal constant MOCK_YNRWAX_IMPLEMENTATION_KEY = "mock-ynrwax-implementation";
-    string internal constant MOCK_YNRWAX_KEY = "mock-ynrwax";
+    string internal constant MOCK_YNRWAX_NAMESPACE = "test-mock-ynrwax";
+    string internal constant TERM_NAMESPACE = "test-term-redeemer";
+    string internal constant MOCK_YNRWAX_PROVIDER_KEY = "mockYnRwaProvider";
+    string internal constant MOCK_YNRWAX_IMPLEMENTATION_KEY = "mockYnRwaImplementation";
+    string internal constant MOCK_YNRWAX_KEY = "mockYnRwa";
 
-    string internal constant TERM_PROVIDER_KEY = "term-provider";
-    string internal constant TERM_IMPLEMENTATION_KEY = "term-implementation";
-    string internal constant TERM_FACTORY_KEY = "term-factory";
-    string internal constant TERM_VAULT_KEY = "term-vault";
-    string internal constant TERM_HOOKS_KEY = "term-hooks";
-    string internal constant TERM_CONTROLLER_KEY = "term-controller";
+    string internal constant TERM_PROVIDER_KEY = "termProvider";
+    string internal constant TERM_IMPLEMENTATION_KEY = "termImplementation";
+    string internal constant TERM_FACTORY_KEY = "termFactory";
+    string internal constant TERM_VAULT_KEY = "termVault";
+    string internal constant TERM_HOOKS_KEY = "termHooks";
+    string internal constant TERM_CONTROLLER_KEY = "termController";
 
     string internal constant MOCK_YNRWAX_NAME = "Mock ynRWAx";
     string internal constant MOCK_YNRWAX_SYMBOL = "mynRWAx";
@@ -30,6 +32,5 @@ library Contracts {
 
     uint8 internal constant VAULT_DECIMALS = 18;
     uint256 internal constant ONE = 1e18;
-    uint256 internal constant TEST_STAGE_TIME = 0;
     uint256 internal constant DEFAULT_ASSET_INDEX = 0;
 }

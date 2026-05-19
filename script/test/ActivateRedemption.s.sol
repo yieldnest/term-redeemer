@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {RedeemableToken} from "../../contracts/RedeemableToken.sol";
-import {TermRedeemerController} from "../../contracts/TermRedeemerController.sol";
+import {TestTermRedeemerController} from "./utils/TestTermRedeemerController.sol";
 import {BaseTestScript} from "./BaseTestScript.s.sol";
 import {Contracts} from "./Contracts.sol";
 import {console2} from "forge-std/Script.sol";
@@ -19,13 +19,13 @@ error InsufficientMockYnRWAxLiquidity(uint256 requestedAssets, uint256 maxWithdr
 
 contract ActivateRedemption is BaseTestScript {
     function run() external {
-        address controllerAddress = _loadAddress(Contracts.TERM_CONTROLLER_KEY);
-        address vaultAddress = _loadAddress(Contracts.TERM_VAULT_KEY);
-        address mockYnRWAx = _loadAddress(Contracts.MOCK_YNRWAX_KEY);
+        address controllerAddress = _loadAddress(Contracts.TERM_NAMESPACE, Contracts.TERM_CONTROLLER_KEY);
+        address vaultAddress = _loadAddress(Contracts.TERM_NAMESPACE, Contracts.TERM_VAULT_KEY);
+        address mockYnRWAx = _loadAddress(Contracts.MOCK_YNRWAX_NAMESPACE, Contracts.MOCK_YNRWAX_KEY);
 
         vm.startBroadcast();
 
-        TermRedeemerController controller = TermRedeemerController(controllerAddress);
+        TestTermRedeemerController controller = TestTermRedeemerController(controllerAddress);
         RedeemableToken vault = RedeemableToken(payable(vaultAddress));
         uint256 requiredAssets = controller.activateRedemption();
 

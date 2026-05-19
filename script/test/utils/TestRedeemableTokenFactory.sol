@@ -2,15 +2,13 @@
 pragma solidity ^0.8.24;
 
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {IHooks} from "yieldnest-vault/src/interface/IHooks.sol";
 import {FeeHooks} from "yieldnest-vault/src/hooks/FeeHooks.sol";
-import {RedeemableToken} from "./RedeemableToken.sol";
-import {TermRedeemerController} from "./TermRedeemerController.sol";
+import {RedeemableToken} from "../../../contracts/RedeemableToken.sol";
+import {TestTermRedeemerController} from "./TestTermRedeemerController.sol";
 
 error ZeroAddress();
-error InvalidRedemptionWindow(uint64 lockEnd, uint64 redeemStart);
 
-contract RedeemableTokenFactory {
+contract TestRedeemableTokenFactory {
     address public immutable implementation;
 
     event Deployed(address indexed vault, address indexed hooks, address indexed controller, address admin);
@@ -27,10 +25,20 @@ contract RedeemableTokenFactory {
         uint8 decimals;
         bool countNativeAsset;
         bool alwaysComputeTotalAssets;
-        bool unrestrictedController;
         uint256 defaultAssetIndex;
-        uint64 lockEnd;
-        uint64 redeemStart;
+    }
+
+    struct HookConfig {
+        bool beforeDeposit;
+        bool afterDeposit;
+        bool beforeMint;
+        bool afterMint;
+        bool beforeRedeem;
+        bool afterRedeem;
+        bool beforeWithdraw;
+        bool afterWithdraw;
+        bool beforeProcessAccounting;
+        bool afterProcessAccounting;
     }
 
     constructor(address implementation_) {
@@ -43,9 +51,14 @@ contract RedeemableTokenFactory {
 
     function deploy(DeployParams calldata params)
         external
-        returns (RedeemableToken vault, FeeHooks hooks, TermRedeemerController controller)
+        returns (RedeemableToken vault, FeeHooks hooks, TestTermRedeemerController controller)
     {
-        _validate(params);
+        if (
+            params.admin == address(0) || params.provider == address(0) || params.redemptionAsset == address(0)
+                || params.depositToken == address(0) || params.feeRecipient == address(0)
+        ) {
+            revert ZeroAddress();
+        }
 
         vault = RedeemableToken(
             payable(
@@ -70,7 +83,7 @@ contract RedeemableTokenFactory {
             )
         );
 
-        IHooks.Config memory config = IHooks.Config({
+        HookConfig memory config = HookConfig({
             beforeDeposit: false,
             afterDeposit: false,
             beforeMint: false,
@@ -83,35 +96,14 @@ contract RedeemableTokenFactory {
             afterProcessAccounting: true
         });
 
-        hooks = new FeeHooks(address(vault), address(this), 0, params.feeRecipient, config);
-        controller = new TermRedeemerController(
-            address(vault),
-            address(hooks),
-            params.admin,
-            params.depositToken,
-            params.redemptionAsset,
-            params.lockEnd,
-            params.redeemStart,
-            params.unrestrictedController
-        );
+        hooks = _deployFeeHooks(address(vault), params.feeRecipient, config);
+        controller = new TestTermRedeemerController(address(vault), address(hooks), params.depositToken, params.redemptionAsset);
 
         _grantTemporaryRoles(vault);
         _configureVault(vault, hooks, controller, params);
         _handoffRoles(vault, params.admin);
 
         emit Deployed(address(vault), address(hooks), address(controller), params.admin);
-    }
-
-    function _validate(DeployParams calldata params) internal pure {
-        if (
-            params.admin == address(0) || params.provider == address(0) || params.redemptionAsset == address(0)
-                || params.depositToken == address(0) || params.feeRecipient == address(0)
-        ) {
-            revert ZeroAddress();
-        }
-        if (params.redeemStart < params.lockEnd) {
-            revert InvalidRedemptionWindow(params.lockEnd, params.redeemStart);
-        }
     }
 
     function _grantTemporaryRoles(RedeemableToken vault) internal {
@@ -127,7 +119,7 @@ contract RedeemableTokenFactory {
     function _configureVault(
         RedeemableToken vault,
         FeeHooks hooks,
-        TermRedeemerController controller,
+        TestTermRedeemerController controller,
         DeployParams calldata params
     ) internal {
         vault.setProvider(params.provider);
@@ -166,5 +158,18 @@ contract RedeemableTokenFactory {
         vault.renounceRole(vault.PAUSER_ROLE(), address(this));
         vault.renounceRole(vault.UNPAUSER_ROLE(), address(this));
         vault.renounceRole(vault.DEFAULT_ADMIN_ROLE(), address(this));
+    }
+
+    function _deployFeeHooks(address vault, address feeRecipient, HookConfig memory config) internal returns (FeeHooks hooks) {
+        bytes memory initCode =
+            abi.encodePacked(type(FeeHooks).creationCode, abi.encode(vault, address(this), 0, feeRecipient, config));
+        address deployed;
+        assembly {
+            deployed := create(0, add(initCode, 0x20), mload(initCode))
+        }
+        if (deployed == address(0)) {
+            revert ZeroAddress();
+        }
+        hooks = FeeHooks(deployed);
     }
 }

@@ -2,12 +2,12 @@
 pragma solidity ^0.8.24;
 
 import {RedeemableToken} from "../../contracts/RedeemableToken.sol";
-import {RedeemableTokenFactory} from "../../contracts/RedeemableTokenFactory.sol";
-import {TermRedeemerController} from "../../contracts/TermRedeemerController.sol";
 import {FeeHooks} from "yieldnest-vault/src/hooks/FeeHooks.sol";
-import {MockRateProvider} from "../../test/mocks/MockRateProvider.sol";
 import {BaseTestScript} from "./BaseTestScript.s.sol";
 import {Contracts} from "./Contracts.sol";
+import {TestRateProvider} from "./utils/TestRateProvider.sol";
+import {TestRedeemableTokenFactory} from "./utils/TestRedeemableTokenFactory.sol";
+import {TestTermRedeemerController} from "./utils/TestTermRedeemerController.sol";
 
 error ProcessorRuleSetupFailed();
 
@@ -26,18 +26,18 @@ contract DeployTermRedeemer is BaseTestScript {
 
     function run() external {
         address admin = _broadcaster();
-        address mockYnRWAx = _loadAddress(Contracts.MOCK_YNRWAX_KEY);
+        address mockYnRWAx = _loadAddress(Contracts.MOCK_YNRWAX_NAMESPACE, Contracts.MOCK_YNRWAX_KEY);
 
         vm.startBroadcast();
 
-        MockRateProvider provider = new MockRateProvider();
+        TestRateProvider provider = new TestRateProvider();
         provider.setRate(Contracts.USDC, Contracts.ONE);
         provider.setRate(mockYnRWAx, Contracts.ONE);
 
         RedeemableToken implementation = new RedeemableToken();
-        RedeemableTokenFactory factory = new RedeemableTokenFactory(address(implementation));
-        (RedeemableToken vault, FeeHooks hooks, TermRedeemerController controller) = factory.deploy(
-            RedeemableTokenFactory.DeployParams({
+        TestRedeemableTokenFactory factory = new TestRedeemableTokenFactory(address(implementation));
+        (RedeemableToken vault, FeeHooks hooks, TestTermRedeemerController controller) = factory.deploy(
+            TestRedeemableTokenFactory.DeployParams({
                 admin: admin,
                 provider: address(provider),
                 wrappedAsset: address(0),
@@ -49,10 +49,7 @@ contract DeployTermRedeemer is BaseTestScript {
                 decimals: Contracts.VAULT_DECIMALS,
                 countNativeAsset: false,
                 alwaysComputeTotalAssets: false,
-                unrestrictedController: true,
-                defaultAssetIndex: Contracts.DEFAULT_ASSET_INDEX,
-                lockEnd: uint64(Contracts.TEST_STAGE_TIME),
-                redeemStart: uint64(Contracts.TEST_STAGE_TIME)
+                defaultAssetIndex: Contracts.DEFAULT_ASSET_INDEX
             })
         );
 
@@ -60,12 +57,21 @@ contract DeployTermRedeemer is BaseTestScript {
 
         vm.stopBroadcast();
 
-        _recordAddress(Contracts.TERM_PROVIDER_KEY, address(provider));
-        _recordAddress(Contracts.TERM_IMPLEMENTATION_KEY, address(implementation));
-        _recordAddress(Contracts.TERM_FACTORY_KEY, address(factory));
-        _recordAddress(Contracts.TERM_VAULT_KEY, address(vault));
-        _recordAddress(Contracts.TERM_HOOKS_KEY, address(hooks));
-        _recordAddress(Contracts.TERM_CONTROLLER_KEY, address(controller));
+        string[] memory keys = new string[](6);
+        address[] memory values = new address[](6);
+        keys[0] = Contracts.TERM_PROVIDER_KEY;
+        values[0] = address(provider);
+        keys[1] = Contracts.TERM_IMPLEMENTATION_KEY;
+        values[1] = address(implementation);
+        keys[2] = Contracts.TERM_FACTORY_KEY;
+        values[2] = address(factory);
+        keys[3] = Contracts.TERM_VAULT_KEY;
+        values[3] = address(vault);
+        keys[4] = Contracts.TERM_HOOKS_KEY;
+        values[4] = address(hooks);
+        keys[5] = Contracts.TERM_CONTROLLER_KEY;
+        values[5] = address(controller);
+        _writeAddresses(Contracts.TERM_NAMESPACE, keys, values);
 
         _logAddress(Contracts.TERM_VAULT_LABEL, address(vault));
         _logAddress(Contracts.TERM_HOOKS_LABEL, address(hooks));

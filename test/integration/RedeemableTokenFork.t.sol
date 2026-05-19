@@ -6,7 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IVault} from "yieldnest-vault/src/interface/IVault.sol";
 import {FeeHooks} from "yieldnest-vault/src/hooks/FeeHooks.sol";
 import {RedeemableToken} from "../../contracts/RedeemableToken.sol";
-import {RedeemableTokenFactory} from "../../contracts/RedeemableTokenFactory.sol";
+import {RedeemableTokenDeployer} from "../../script/common/RedeemableTokenDeployer.sol";
 import {TermRedeemerController} from "../../contracts/TermRedeemerController.sol";
 import {MockERC20} from "../mocks/MockERC20.sol";
 import {MockRateProvider} from "../mocks/MockRateProvider.sol";
@@ -134,9 +134,9 @@ contract RedeemableTokenForkTest is Test {
 
     function _deployRedeemer() internal {
         RedeemableToken implementation = new RedeemableToken();
-        RedeemableTokenFactory factory = new RedeemableTokenFactory(address(implementation));
+        RedeemableTokenDeployer factory = new RedeemableTokenDeployer(address(implementation));
         (redeemer, feeHooks, controller) = factory.deploy(
-            RedeemableTokenFactory.DeployParams({
+            RedeemableTokenDeployer.DeployParams({
                 admin: ADMIN,
                 provider: address(provider),
                 wrappedAsset: address(wrappedUsdc),
@@ -148,7 +148,6 @@ contract RedeemableTokenForkTest is Test {
                 decimals: 18,
                 countNativeAsset: false,
                 alwaysComputeTotalAssets: false,
-                unrestrictedController: false,
                 defaultAssetIndex: 1,
                 lockEnd: LOCK_END,
                 redeemStart: REDEEM_START

@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {Test} from "forge-std/Test.sol";
 import {IVault} from "yieldnest-vault/src/interface/IVault.sol";
 import {RedeemableToken} from "../../contracts/RedeemableToken.sol";
-import {RedeemableTokenFactory} from "../../contracts/RedeemableTokenFactory.sol";
+import {RedeemableTokenDeployer} from "../../script/common/RedeemableTokenDeployer.sol";
 import {FeeHooks} from "yieldnest-vault/src/hooks/FeeHooks.sol";
 import {
     AlreadyLocked,
@@ -56,9 +56,9 @@ contract TermRedeemerTest is Test {
         provider.setRate(address(ynRwa), 11e17);
 
         RedeemableToken implementation = new RedeemableToken();
-        RedeemableTokenFactory factory = new RedeemableTokenFactory(address(implementation));
+        RedeemableTokenDeployer factory = new RedeemableTokenDeployer(address(implementation));
         (redeemer, feeHooks, controller) = factory.deploy(
-            RedeemableTokenFactory.DeployParams({
+            RedeemableTokenDeployer.DeployParams({
                 admin: ADMIN,
                 provider: address(provider),
                 wrappedAsset: address(wrappedUsdc),
@@ -70,7 +70,6 @@ contract TermRedeemerTest is Test {
                 decimals: 18,
                 countNativeAsset: false,
                 alwaysComputeTotalAssets: false,
-                unrestrictedController: false,
                 defaultAssetIndex: 1,
                 lockEnd: LOCK_END,
                 redeemStart: REDEEM_START

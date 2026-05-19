@@ -10,7 +10,7 @@ import {console2} from "forge-std/Script.sol";
 contract DepositUsdcIntoMockYnRWAx is BaseTestScript {
     function run() external {
         uint256 assets = vm.envUint(Contracts.AMOUNT_ENV);
-        address vault = _loadAddress(Contracts.MOCK_YNRWAX_KEY);
+        address vault = _loadAddress(Contracts.MOCK_YNRWAX_NAMESPACE, Contracts.MOCK_YNRWAX_KEY);
         address depositor = _broadcaster();
 
         vm.startBroadcast();

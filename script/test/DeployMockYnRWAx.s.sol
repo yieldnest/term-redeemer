@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {RedeemableToken} from "../../contracts/RedeemableToken.sol";
-import {MockRateProvider} from "../../test/mocks/MockRateProvider.sol";
+import {TestRateProvider} from "./utils/TestRateProvider.sol";
 import {BaseTestScript} from "./BaseTestScript.s.sol";
 import {Contracts} from "./Contracts.sol";
 
@@ -12,7 +12,7 @@ contract DeployMockYnRWAx is BaseTestScript {
         vm.startBroadcast();
 
         address admin = _broadcaster();
-        MockRateProvider provider = new MockRateProvider();
+        TestRateProvider provider = new TestRateProvider();
         provider.setRate(Contracts.USDC, Contracts.ONE);
 
         RedeemableToken implementation = new RedeemableToken();
@@ -44,9 +44,15 @@ contract DeployMockYnRWAx is BaseTestScript {
 
         vm.stopBroadcast();
 
-        _recordAddress(Contracts.MOCK_YNRWAX_PROVIDER_KEY, address(provider));
-        _recordAddress(Contracts.MOCK_YNRWAX_IMPLEMENTATION_KEY, address(implementation));
-        _recordAddress(Contracts.MOCK_YNRWAX_KEY, address(vault));
+        string[] memory keys = new string[](3);
+        address[] memory values = new address[](3);
+        keys[0] = Contracts.MOCK_YNRWAX_PROVIDER_KEY;
+        values[0] = address(provider);
+        keys[1] = Contracts.MOCK_YNRWAX_IMPLEMENTATION_KEY;
+        values[1] = address(implementation);
+        keys[2] = Contracts.MOCK_YNRWAX_KEY;
+        values[2] = address(vault);
+        _writeAddresses(Contracts.MOCK_YNRWAX_NAMESPACE, keys, values);
 
         _logAddress(Contracts.MOCK_YNRWAX_LABEL, address(vault));
         _logAddress(Contracts.MOCK_YNRWAX_PROVIDER_LABEL, address(provider));

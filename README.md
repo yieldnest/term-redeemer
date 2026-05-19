@@ -50,7 +50,7 @@ flowchart LR
 
 ### Flow
 
-1. The vault is initialized paused, then configured externally with roles, provider, assets, and hooks.
+1. The vault is deployed through the factory, initialized paused, and then configured atomically with roles, provider, assets, and hooks.
 2. Users deposit `ynRWAx` into `RedeemableToken` and receive `wynRWAx`.
 3. When the lock period is over, `lock()` is called on the controller:
    - accounting is processed once
@@ -95,9 +95,10 @@ sequenceDiagram
 
 ### Key Files
 
-- `contracts/RedeemableToken.sol`
-- `contracts/TermRedeemerController.sol`
-- `test/TermRedeemer.t.sol`
+- `src/RedeemableToken.sol`
+- `src/TermRedeemerController.sol`
+- `script/common/RedeemableTokenDeployer.sol`
+- `test/unit/TermRedeemer.t.sol`
 
 ### Commands
 
@@ -106,3 +107,14 @@ forge build
 forge test
 forge fmt
 ```
+
+### Layout
+
+- `src/`
+  - production contracts
+- `script/deploy`
+  - production deployment scripts
+- `script/test`
+  - test harness deployment and lifecycle scripts
+- `deployments/`
+  - per-chain JSON deployment artifacts written by scripts
