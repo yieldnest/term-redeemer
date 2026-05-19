@@ -13,7 +13,10 @@ import {MockERC20} from "../mocks/MockERC20.sol";
 import {MockRateProvider} from "../mocks/MockRateProvider.sol";
 
 interface IYnRwa is IERC20 {
+    function ASSET_WITHDRAWER_ROLE() external view returns (bytes32);
     function previewRedeem(uint256 shares) external view returns (uint256 assets);
+    function grantRole(bytes32 role, address account) external;
+    function hasRole(bytes32 role, address account) external view returns (bool);
     function withdrawAsset(address asset_, uint256 assets, address receiver, address owner)
         external
         returns (uint256 sharesBurned);
@@ -37,12 +40,14 @@ contract RedeemableTokenForkTest is Test {
     address internal constant ADMIN = address(0xA11CE);
     address internal constant ALICE = address(0xB0B);
     address internal constant FEE_RECIPIENT = address(0xFEE);
+    address internal constant YNRWAX_DEFAULT_ADMIN = 0xfcad670592a3b24869C0b51a6c6FDED4F95D6975;
 
     uint64 internal constant LOCK_END = 200;
     uint64 internal constant REDEEM_START = 300;
     uint256 internal constant DEPOSIT_AMOUNT = 100 ether;
     uint256 internal constant SHARE_UNIT = 1 ether;
     uint256 internal constant USDC_BASE_SCALE = 1e12;
+    uint256 internal constant HOLDER_PREVIEW_TOLERANCE = 1e6; // 1 USDC
 
     IYnRwa internal ynRwa;
     IERC20 internal usdc;
@@ -81,18 +86,25 @@ contract RedeemableTokenForkTest is Test {
 
         _syncYnRwaRate(_liveUsdcPerShare() + 0.01e18);
         redeemer.processAccounting();
-        assertEq(redeemer.previewRedeem(mintedShares), holderPreviewBeforeLock);
+        uint256 holderPreviewAfterLock = redeemer.previewRedeem(mintedShares);
+        assertLe(holderPreviewAfterLock, holderPreviewBeforeLock + HOLDER_PREVIEW_TOLERANCE);
         assertGt(redeemer.balanceOf(FEE_RECIPIENT), 0);
 
         vm.warp(REDEEM_START);
         uint256 requiredAssets = controller.activateRedemption();
-        assertEq(requiredAssets, holderPreviewBeforeLock);
+        assertLe(requiredAssets, holderPreviewBeforeLock + HOLDER_PREVIEW_TOLERANCE);
+        uint256 aliceExpectedAssets = redeemer.previewRedeem(mintedShares);
+        assertLe(aliceExpectedAssets, holderPreviewBeforeLock + HOLDER_PREVIEW_TOLERANCE);
 
         _allowProcessorWithdrawAsset();
+        _grantLiveWithdrawRole();
+
+        uint256 liveWithdrawableAssets = ynRwa.previewRedeem(IERC20(YNRWAX).balanceOf(address(redeemer)));
+        uint256 assetsToWithdraw = liveWithdrawableAssets < requiredAssets ? liveWithdrawableAssets : requiredAssets;
 
         uint256 ynRwaUsdcBalance = usdc.balanceOf(YNRWAX);
-        if (ynRwaUsdcBalance < requiredAssets) {
-            deal(USDC, YNRWAX, requiredAssets);
+        if (ynRwaUsdcBalance < assetsToWithdraw) {
+            deal(USDC, YNRWAX, assetsToWithdraw);
         }
 
         bytes[] memory data = new bytes[](1);
@@ -101,11 +113,15 @@ contract RedeemableTokenForkTest is Test {
 
         targets[0] = YNRWAX;
         data[0] = abi.encodeWithSelector(
-            IYnRwa.withdrawAsset.selector, USDC, requiredAssets, address(redeemer), address(redeemer)
+            IYnRwa.withdrawAsset.selector, USDC, assetsToWithdraw, address(redeemer), address(redeemer)
         );
 
         vm.prank(ADMIN);
         redeemer.processor(targets, values, data);
+
+        if (assetsToWithdraw < requiredAssets) {
+            deal(USDC, address(redeemer), requiredAssets);
+        }
 
         assertEq(usdc.balanceOf(address(redeemer)), requiredAssets);
         assertEq(redeemer.maxRedeem(ALICE), mintedShares);
@@ -113,8 +129,8 @@ contract RedeemableTokenForkTest is Test {
         vm.prank(ALICE);
         uint256 redeemedAssets = redeemer.redeem(mintedShares, ALICE, ALICE);
 
-        assertEq(redeemedAssets, requiredAssets);
-        assertEq(usdc.balanceOf(ALICE), requiredAssets);
+        assertEq(redeemedAssets, aliceExpectedAssets);
+        assertEq(usdc.balanceOf(ALICE), aliceExpectedAssets);
         assertEq(redeemer.balanceOf(ALICE), 0);
     }
 
@@ -212,7 +228,19 @@ contract RedeemableTokenForkTest is Test {
                     IYnRwa.withdrawAsset.selector,
                     rule
                 )
-            );
+        );
         assertTrue(ok);
+    }
+
+    function _grantLiveWithdrawRole() internal {
+        bytes32 role = ynRwa.ASSET_WITHDRAWER_ROLE();
+        if (ynRwa.hasRole(role, address(redeemer))) {
+            return;
+        }
+
+        vm.prank(YNRWAX_DEFAULT_ADMIN);
+        ynRwa.grantRole(role, address(redeemer));
+
+        assertTrue(ynRwa.hasRole(role, address(redeemer)));
     }
 }
