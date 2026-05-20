@@ -1,0 +1,7 @@
+{
+  "chainId": 1,
+  "mockYnRwa": "0xB25dfEDAe1673057bbc23C15318c1Efd0d17D70e",
+  "mockYnRwaFactory": "0xe05b8d05EEb88d03cEB494d24E0Be3A9EF5Cd423",
+  "mockYnRwaImplementation": "0xa2997E1C82137B242e1aF9E7E2D8f5ec42E12cec",
+  "mockYnRwaProvider": "0xE56d6cBb40c7aa6676dA00c4BDA4715f21398F72"
+}
