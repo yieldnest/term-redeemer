@@ -6,6 +6,7 @@ import {RedeemableToken} from "../../contracts/RedeemableToken.sol";
 import {TestTermRedeemerController} from "./utils/TestTermRedeemerController.sol";
 import {BaseTestScript} from "./BaseTestScript.s.sol";
 import {Contracts} from "./Contracts.sol";
+import {Constants} from "./Constants.sol";
 import {console2} from "forge-std/Script.sol";
 
 interface IWithdrawableVault is IERC20 {
@@ -19,9 +20,9 @@ error InsufficientMockYnRWAxLiquidity(uint256 requestedAssets, uint256 maxWithdr
 
 contract ActivateRedemption is BaseTestScript {
     function run() external {
-        address controllerAddress = _loadAddress(Contracts.TERM_NAMESPACE, Contracts.TERM_CONTROLLER_KEY);
-        address vaultAddress = _loadAddress(Contracts.TERM_NAMESPACE, Contracts.TERM_VAULT_KEY);
-        address mockYnRWAx = _loadAddress(Contracts.MOCK_YNRWAX_NAMESPACE, Contracts.MOCK_YNRWAX_KEY);
+        address controllerAddress = _loadAddress(Constants.TERM_NAMESPACE, Constants.TERM_CONTROLLER_KEY);
+        address vaultAddress = _loadAddress(Constants.TERM_NAMESPACE, Constants.TERM_VAULT_KEY);
+        address mockYnRWAx = _loadAddress(Constants.MOCK_YNRWAX_NAMESPACE, Constants.MOCK_YNRWAX_KEY);
 
         vm.startBroadcast();
 

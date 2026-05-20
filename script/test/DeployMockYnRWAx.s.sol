@@ -6,6 +6,7 @@ import {RedeemableToken} from "../../contracts/RedeemableToken.sol";
 import {MockRateProvider} from "../../test/mocks/MockRateProvider.sol";
 import {BaseTestScript} from "./BaseTestScript.s.sol";
 import {Contracts} from "./Contracts.sol";
+import {Constants} from "./Constants.sol";
 
 contract DeployMockYnRWAx is BaseTestScript {
     function run() external {
@@ -13,7 +14,7 @@ contract DeployMockYnRWAx is BaseTestScript {
 
         address admin = _broadcaster();
         MockRateProvider provider = new MockRateProvider();
-        provider.setRate(Contracts.USDC, Contracts.ONE);
+        provider.setRate(Contracts.USDC, Constants.ONE);
 
         RedeemableToken implementation = new RedeemableToken();
         TransparentUpgradeableProxy proxy = new TransparentUpgradeableProxy(
@@ -23,12 +24,12 @@ contract DeployMockYnRWAx is BaseTestScript {
                 RedeemableToken.initialize,
                 (RedeemableToken.InitParams({
                     admin: admin,
-                    name: Contracts.MOCK_YNRWAX_NAME,
-                    symbol: Contracts.MOCK_YNRWAX_SYMBOL,
-                    decimals_: Contracts.VAULT_DECIMALS,
+                    name: Constants.MOCK_YNRWAX_NAME,
+                    symbol: Constants.MOCK_YNRWAX_SYMBOL,
+                    decimals_: Constants.VAULT_DECIMALS,
                     countNativeAsset_: false,
                     alwaysComputeTotalAssets_: false,
-                    defaultAssetIndex_: Contracts.DEFAULT_ASSET_INDEX
+                    defaultAssetIndex_: Constants.DEFAULT_ASSET_INDEX
                 }))
             )
         );
@@ -46,15 +47,15 @@ contract DeployMockYnRWAx is BaseTestScript {
 
         string[] memory keys = new string[](3);
         address[] memory values = new address[](3);
-        keys[0] = Contracts.MOCK_YNRWAX_PROVIDER_KEY;
+        keys[0] = Constants.MOCK_YNRWAX_PROVIDER_KEY;
         values[0] = address(provider);
-        keys[1] = Contracts.MOCK_YNRWAX_IMPLEMENTATION_KEY;
+        keys[1] = Constants.MOCK_YNRWAX_IMPLEMENTATION_KEY;
         values[1] = address(implementation);
-        keys[2] = Contracts.MOCK_YNRWAX_KEY;
+        keys[2] = Constants.MOCK_YNRWAX_KEY;
         values[2] = address(vault);
-        _writeAddresses(Contracts.MOCK_YNRWAX_NAMESPACE, keys, values);
+        _writeAddresses(Constants.MOCK_YNRWAX_NAMESPACE, keys, values);
 
-        _logAddress(Contracts.MOCK_YNRWAX_LABEL, address(vault));
-        _logAddress(Contracts.MOCK_YNRWAX_PROVIDER_LABEL, address(provider));
+        _logAddress(Constants.MOCK_YNRWAX_LABEL, address(vault));
+        _logAddress(Constants.MOCK_YNRWAX_PROVIDER_LABEL, address(provider));
     }
 }
