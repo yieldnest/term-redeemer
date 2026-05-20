@@ -16,6 +16,8 @@ abstract contract BaseDeploymentScript is Script {
             revert InvalidDeploymentPayload();
         }
 
+        vm.createDir(_deploymentDirectory(namespace), true);
+
         string memory objectKey = "deployment";
         for (uint256 i = 0; i < keys.length; ++i) {
             vm.serializeAddress(objectKey, keys[i], values[i]);
@@ -35,6 +37,10 @@ abstract contract BaseDeploymentScript is Script {
     }
 
     function _deploymentPath(string memory namespace) internal view returns (string memory) {
-        return string.concat(vm.projectRoot(), "/deployments/", namespace, "/", vm.toString(block.chainid), ".json");
+        return string.concat(_deploymentDirectory(namespace), "/", vm.toString(block.chainid), ".json");
+    }
+
+    function _deploymentDirectory(string memory namespace) internal view returns (string memory) {
+        return string.concat(vm.projectRoot(), "/deployments/", namespace);
     }
 }
