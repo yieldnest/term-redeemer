@@ -8,6 +8,8 @@ import {BaseTestScript} from "./BaseTestScript.s.sol";
 import {Contracts} from "./Contracts.sol";
 import {Constants} from "./Constants.sol";
 
+/// @notice Example:
+/// SENDER=0xYourAddress ACCOUNT=your-keystore-name forge script script/test/DeployMockYnRWAx.s.sol:DeployMockYnRWAx --rpc-url $ETH_MAINNET_RPC_URL --account $ACCOUNT --sender $SENDER --broadcast --verify --etherscan-api-key $ETHERSCAN_API_KEY
 contract DeployMockYnRWAx is BaseTestScript {
     function run() external {
         vm.startBroadcast();

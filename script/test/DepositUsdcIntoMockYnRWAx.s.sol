@@ -8,6 +8,8 @@ import {Contracts} from "./Contracts.sol";
 import {Constants} from "./Constants.sol";
 import {console2} from "forge-std/Script.sol";
 
+/// @notice Example:
+/// SENDER=0xYourAddress ACCOUNT=your-keystore-name AMOUNT=1000000 forge script script/test/DepositUsdcIntoMockYnRWAx.s.sol:DepositUsdcIntoMockYnRWAx --rpc-url $ETH_MAINNET_RPC_URL --account $ACCOUNT --sender $SENDER --broadcast
 contract DepositUsdcIntoMockYnRWAx is BaseTestScript {
     function run() external {
         uint256 assets = vm.envUint(Constants.AMOUNT_ENV);

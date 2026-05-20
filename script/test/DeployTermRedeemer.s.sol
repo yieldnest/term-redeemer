@@ -12,6 +12,8 @@ import {TestTermRedeemerController} from "./utils/TestTermRedeemerController.sol
 
 error ProcessorRuleSetupFailed();
 
+/// @notice Example:
+/// SENDER=0xYourAddress ACCOUNT=your-keystore-name forge script script/test/DeployTermRedeemer.s.sol:DeployTermRedeemer --rpc-url $ETH_MAINNET_RPC_URL --account $ACCOUNT --sender $SENDER --broadcast --verify --etherscan-api-key $ETHERSCAN_API_KEY
 contract DeployTermRedeemer is BaseTestScript {
     struct ParamRule {
         uint8 paramType;

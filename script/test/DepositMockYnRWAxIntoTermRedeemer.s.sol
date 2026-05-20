@@ -7,6 +7,8 @@ import {BaseTestScript} from "./BaseTestScript.s.sol";
 import {Constants} from "./Constants.sol";
 import {console2} from "forge-std/Script.sol";
 
+/// @notice Example:
+/// SENDER=0xYourAddress ACCOUNT=your-keystore-name AMOUNT=1000000000000000000 forge script script/test/DepositMockYnRWAxIntoTermRedeemer.s.sol:DepositMockYnRWAxIntoTermRedeemer --rpc-url $ETH_MAINNET_RPC_URL --account $ACCOUNT --sender $SENDER --broadcast
 contract DepositMockYnRWAxIntoTermRedeemer is BaseTestScript {
     function run() external {
         uint256 assets = vm.envUint(Constants.AMOUNT_ENV);

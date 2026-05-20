@@ -18,6 +18,8 @@ interface IWithdrawableVault is IERC20 {
 
 error InsufficientMockYnRWAxLiquidity(uint256 requestedAssets, uint256 maxWithdrawableAssets);
 
+/// @notice Example:
+/// SENDER=0xYourAddress ACCOUNT=your-keystore-name forge script script/test/ActivateRedemption.s.sol:ActivateRedemption --rpc-url $ETH_MAINNET_RPC_URL --account $ACCOUNT --sender $SENDER --broadcast
 contract ActivateRedemption is BaseTestScript {
     function run() external {
         address controllerAddress = _loadAddress(Constants.TERM_NAMESPACE, Constants.TERM_CONTROLLER_KEY);

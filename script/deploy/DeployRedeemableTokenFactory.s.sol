@@ -5,6 +5,8 @@ import {RedeemableToken} from "../../contracts/RedeemableToken.sol";
 import {RedeemableTokenDeployer} from "../common/RedeemableTokenDeployer.sol";
 import {BaseDeploymentScript} from "../common/BaseDeploymentScript.s.sol";
 
+/// @notice Example:
+/// SENDER=0xYourAddress ACCOUNT=your-keystore-name forge script script/deploy/DeployRedeemableTokenFactory.s.sol:DeployRedeemableTokenFactory --rpc-url $ETH_MAINNET_RPC_URL --account $ACCOUNT --sender $SENDER --broadcast --verify --etherscan-api-key $ETHERSCAN_API_KEY
 contract DeployRedeemableTokenFactory is BaseDeploymentScript {
     string internal constant DEPLOY_NAMESPACE = "deploy";
 
