@@ -30,10 +30,12 @@ contract DeployTermRedeemer is BaseTestScript {
     function run() external {
         address admin = _broadcaster();
         address mockYnRWAx = _loadAddress(Constants.MOCK_YNRWAX_NAMESPACE, Constants.MOCK_YNRWAX_KEY);
+        address wrappedUsdc = _loadAddress(Constants.SHARED_NAMESPACE, Constants.WRAPPED_USDC_KEY);
 
         vm.startBroadcast();
 
         MockRateProvider provider = new MockRateProvider();
+        provider.setRate(wrappedUsdc, Constants.ONE);
         provider.setRate(Contracts.USDC, Constants.ONE);
         provider.setRate(mockYnRWAx, Constants.ONE);
 
@@ -43,7 +45,7 @@ contract DeployTermRedeemer is BaseTestScript {
             TestRedeemableTokenFactory.DeployParams({
                 admin: admin,
                 provider: address(provider),
-                wrappedAsset: address(0),
+                wrappedAsset: wrappedUsdc,
                 redemptionAsset: Contracts.USDC,
                 depositToken: mockYnRWAx,
                 feeRecipient: admin,

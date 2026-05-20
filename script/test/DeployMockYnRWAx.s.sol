@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {RedeemableToken} from "../../contracts/RedeemableToken.sol";
 import {MockRateProvider} from "../../test/mocks/MockRateProvider.sol";
+import {MockERC20} from "../../test/mocks/MockERC20.sol";
 import {BaseTestScript} from "./BaseTestScript.s.sol";
 import {Contracts} from "./Contracts.sol";
 import {Constants} from "./Constants.sol";
@@ -16,6 +17,8 @@ contract DeployMockYnRWAx is BaseTestScript {
 
         address admin = _broadcaster();
         MockRateProvider provider = new MockRateProvider();
+        MockERC20 wrappedUsdc = new MockERC20("Wrapped USDC", "wUSDC", 18);
+        provider.setRate(address(wrappedUsdc), Constants.ONE);
         provider.setRate(Contracts.USDC, Constants.ONE);
 
         RedeemableToken implementation = new RedeemableToken();
@@ -41,6 +44,8 @@ contract DeployMockYnRWAx is BaseTestScript {
         vault.grantRole(vault.ASSET_MANAGER_ROLE(), admin);
         vault.grantRole(vault.UNPAUSER_ROLE(), admin);
         vault.setProvider(address(provider));
+        vault.addAsset(address(wrappedUsdc), false);
+        vault.setAssetWithdrawable(address(wrappedUsdc), false);
         vault.addAsset(Contracts.USDC, true);
         vault.setAssetWithdrawable(Contracts.USDC, true);
         vault.unpause();
@@ -57,7 +62,14 @@ contract DeployMockYnRWAx is BaseTestScript {
         values[2] = address(vault);
         _writeAddresses(Constants.MOCK_YNRWAX_NAMESPACE, keys, values);
 
+        string[] memory sharedKeys = new string[](1);
+        address[] memory sharedValues = new address[](1);
+        sharedKeys[0] = Constants.WRAPPED_USDC_KEY;
+        sharedValues[0] = address(wrappedUsdc);
+        _writeAddresses(Constants.SHARED_NAMESPACE, sharedKeys, sharedValues);
+
         _logAddress(Constants.MOCK_YNRWAX_LABEL, address(vault));
         _logAddress(Constants.MOCK_YNRWAX_PROVIDER_LABEL, address(provider));
+        _logAddress(Constants.WRAPPED_USDC_LABEL, address(wrappedUsdc));
     }
 }
