@@ -5,8 +5,6 @@ library Constants {
     string internal constant AMOUNT_ENV = "AMOUNT";
 
     string internal constant MOCK_YNRWAX_NAMESPACE = "test-mock-ynrwax";
-    string internal constant SHARED_NAMESPACE = "test-shared";
-    string internal constant WRAPPED_USDC_KEY = "wrappedUsdc";
     string internal constant TERM_NAMESPACE = "test-term-redeemer";
     string internal constant MOCK_YNRWAX_PROVIDER_KEY = "mockYnRwaProvider";
     string internal constant MOCK_YNRWAX_IMPLEMENTATION_KEY = "mockYnRwaImplementation";
@@ -26,7 +24,6 @@ library Constants {
 
     string internal constant MOCK_YNRWAX_LABEL = "Mock ynRWAx";
     string internal constant MOCK_YNRWAX_PROVIDER_LABEL = "Mock ynRWAx provider";
-    string internal constant WRAPPED_USDC_LABEL = "Wrapped USDC";
     string internal constant TERM_VAULT_LABEL = "Term vault";
     string internal constant TERM_HOOKS_LABEL = "Term hooks";
     string internal constant TERM_CONTROLLER_LABEL = "Term controller";
