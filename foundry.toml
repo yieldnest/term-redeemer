@@ -1,0 +1,41 @@
+[profile.default]
+src = "contracts"
+out = "out"
+libs = ["lib"]
+test = "test/unit"
+remappings = [
+  "src/=lib/yieldnest-vault/src/",
+  "script/=lib/yieldnest-vault/script/",
+  "@openzeppelin/contracts/=lib/yieldnest-vault/lib/openzeppelin-contracts/contracts/",
+  "@openzeppelin/contracts-upgradeable/=lib/yieldnest-vault/lib/openzeppelin-contracts-upgradeable/contracts/",
+  "lib/openzeppelin-contracts/=lib/yieldnest-vault/lib/openzeppelin-contracts/",
+  "lib/openzeppelin-contracts-upgradeable/=lib/yieldnest-vault/lib/openzeppelin-contracts-upgradeable/"
+]
+via_ir = true
+optimizer = true
+optimizer_runs = 200
+fs_permissions = [{ access = "read-write", path = "./deployments" }]
+
+[profile.mainnet]
+src = "contracts"
+out = "out"
+libs = ["lib"]
+test = "test/integration"
+remappings = [
+  "src/=lib/yieldnest-vault/src/",
+  "script/=lib/yieldnest-vault/script/",
+  "@openzeppelin/contracts/=lib/yieldnest-vault/lib/openzeppelin-contracts/contracts/",
+  "@openzeppelin/contracts-upgradeable/=lib/yieldnest-vault/lib/openzeppelin-contracts-upgradeable/contracts/",
+  "lib/openzeppelin-contracts/=lib/yieldnest-vault/lib/openzeppelin-contracts/",
+  "lib/openzeppelin-contracts-upgradeable/=lib/yieldnest-vault/lib/openzeppelin-contracts-upgradeable/"
+]
+eth_rpc_url = "eth_mainnet"
+via_ir = true
+optimizer = true
+optimizer_runs = 200
+fs_permissions = [{ access = "read-write", path = "./deployments" }]
+
+[rpc_endpoints]
+eth_mainnet = "${ETH_MAINNET_RPC_URL}"
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
