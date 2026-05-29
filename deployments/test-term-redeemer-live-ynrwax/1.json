@@ -1,0 +1,10 @@
+{
+  "chainId": 1,
+  "depositToken": "0x01Ba69727E2860b37bc1a2bd56999c1aFb4C15D8",
+  "termController": "0x368214F6e87d29904D0d710CC10606B838386736",
+  "termFactory": "0x6e0d9E0c98736E7F0F95F8C69191f5c0743Fbd8A",
+  "termHooks": "0x4a7Bcc6E2aea3edae95598897D91fb5DA6261c75",
+  "termImplementation": "0x8e599a9FFC4ae558b38247DfdAbFcc50D73bce9E",
+  "termProvider": "0xF38613b1Ff836286E0044f230BEE0F8058aaf2BC",
+  "termVault": "0x87376F00bB483BFa0D4B9dEfA13a5F3754e2A280"
+}
