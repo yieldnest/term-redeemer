@@ -6,6 +6,7 @@ library Constants {
 
     string internal constant MOCK_YNRWAX_NAMESPACE = "test-mock-ynrwax";
     string internal constant TERM_NAMESPACE = "test-term-redeemer";
+    string internal constant LIVE_TERM_NAMESPACE = "test-term-redeemer-live-ynrwax";
     string internal constant MOCK_YNRWAX_PROVIDER_KEY = "mockYnRwaProvider";
     string internal constant MOCK_YNRWAX_IMPLEMENTATION_KEY = "mockYnRwaImplementation";
     string internal constant MOCK_YNRWAX_KEY = "mockYnRwa";
@@ -21,6 +22,8 @@ library Constants {
     string internal constant MOCK_YNRWAX_SYMBOL = "mynRWAx";
     string internal constant TERM_VAULT_NAME = "Withdrawable Mock ynRWAx";
     string internal constant TERM_VAULT_SYMBOL = "wmynRWAx";
+    string internal constant LIVE_TERM_VAULT_NAME = "Withdrawable ynRWAx";
+    string internal constant LIVE_TERM_VAULT_SYMBOL = "wynRWAx";
 
     string internal constant MOCK_YNRWAX_LABEL = "Mock ynRWAx";
     string internal constant MOCK_YNRWAX_PROVIDER_LABEL = "Mock ynRWAx provider";
